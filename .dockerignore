@@ -1,0 +1,13 @@
+.git
+.github
+.env
+**/.env
+**/.venv
+**/node_modules
+**/.expo
+**/dist
+**/__pycache__
+**/.pytest_cache
+**/*.db
+outputs
+workspaces

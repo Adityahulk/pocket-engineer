@@ -1,0 +1,33 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: pocket_engineer
+      POSTGRES_USER: pocket
+      POSTGRES_PASSWORD: pocket-local-only
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pocket -d pocket_engineer"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - pocket-postgres:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      POCKET_DATABASE_URL: postgresql+psycopg://pocket:pocket-local-only@postgres:5432/pocket_engineer
+      POCKET_DEMO_REPOSITORY_PATH: /app/fixtures/demo-checkout
+      POCKET_WORKSPACE_ROOT: /tmp/pocket-workspaces
+      POCKET_CORS_ORIGINS: http://localhost:8081,http://localhost:19006,http://127.0.0.1:8081,http://127.0.0.1:19006
+      POCKET_PUBLIC_BASE_URL: http://localhost:8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pocket-postgres:
