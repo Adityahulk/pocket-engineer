@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import hmac
 import time
 from pathlib import Path
 
@@ -22,6 +24,16 @@ class GitHubService:
         if not self.settings.github_app_slug:
             return None
         return f"https://github.com/apps/{self.settings.github_app_slug}/installations/new"
+
+    def verify_webhook(self, body: bytes, signature: str | None) -> None:
+        secret = self.settings.github_webhook_secret
+        if not secret:
+            raise GitHubError("GitHub webhook secret is not configured")
+        if not signature or not signature.startswith("sha256="):
+            raise GitHubError("Missing GitHub webhook signature")
+        expected = "sha256=" + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(expected, signature):
+            raise GitHubError("Invalid GitHub webhook signature")
 
     async def installation_token(self, installation_id: int | None) -> str | None:
         if self.settings.github_token:

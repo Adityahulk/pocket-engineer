@@ -1,6 +1,7 @@
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -19,17 +20,22 @@ class Settings(BaseSettings):
     demo_repository_path: str = "fixtures/demo-checkout"
     worker_enabled: bool = True
     worker_poll_seconds: float = 0.35
+    worker_stale_minutes: int = 20
     workspace_root: str = "workspaces"
     command_timeout_seconds: int = 180
     agent_provider: str = "demo"
     aider_model: str = "openai/gpt-5"
     sandbox_mode: str = "local"
     sandbox_image: str = "pocket-engineer-sandbox:latest"
+    engineer_name: str = "Alex"
+    engineer_title: str = "Senior Engineer"
     github_app_slug: str = ""
     github_app_id: str = ""
     github_private_key: str = ""
     github_token: str = ""
     github_api_url: str = "https://api.github.com"
+    github_webhook_secret: str = ""
+    alert_webhook_token: str = ""
     public_base_url: str = "http://localhost:8000"
     auth_mode: str = "disabled"
     auth_allowed_emails: str = ""
@@ -39,6 +45,15 @@ class Settings(BaseSettings):
     realtime_model: str = "gpt-realtime-2.1"
     realtime_voice: str = "marin"
 
+    @field_validator("database_url")
+    @classmethod
+    def use_psycopg_driver(cls, value: str) -> str:
+        if value.startswith("postgres://"):
+            return "postgresql+psycopg://" + value.removeprefix("postgres://")
+        if value.startswith("postgresql://"):
+            return "postgresql+psycopg://" + value.removeprefix("postgresql://")
+        return value
+
     @property
     def allowed_origins(self) -> list[str]:
         return [value.strip() for value in self.cors_origins.split(",") if value.strip()]
@@ -46,6 +61,10 @@ class Settings(BaseSettings):
     @property
     def allowed_auth_emails(self) -> set[str]:
         return {value.strip().lower() for value in self.auth_allowed_emails.split(",") if value.strip()}
+
+    @property
+    def engineer_label(self) -> str:
+        return f"{self.engineer_name} · {self.engineer_title}"
 
     def resolve_from_api(self, value: str) -> Path:
         path = Path(value)

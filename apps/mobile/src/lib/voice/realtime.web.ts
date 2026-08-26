@@ -1,7 +1,7 @@
 import { handleRealtimeEvent, textMessage } from './protocol';
 import type { VoiceCallbacks, VoiceConnection } from './types';
 
-export function createRealtimeVoice(callbacks: VoiceCallbacks): VoiceConnection {
+export function createRealtimeVoice(callbacks: VoiceCallbacks, context: { projectId?: string; missionId?: string } = {}): VoiceConnection {
   let peer: RTCPeerConnection | null = null;
   let channel: RTCDataChannel | null = null;
   let stream: MediaStream | null = null;
@@ -22,7 +22,7 @@ export function createRealtimeVoice(callbacks: VoiceCallbacks): VoiceConnection 
           callbacks.onStatus('listening');
           channel?.send(JSON.stringify({ type: 'response.create', response: { instructions: 'Greet the user briefly and ask how you can help with their software.' } }));
         };
-        channel.onmessage = (event) => handleRealtimeEvent(String(event.data), callbacks, channel!);
+        channel.onmessage = (event) => handleRealtimeEvent(String(event.data), callbacks, channel!, context);
         const offer = await peer.createOffer();
         await peer.setLocalDescription(offer);
         const response = await fetch('https://api.openai.com/v1/realtime/calls', {

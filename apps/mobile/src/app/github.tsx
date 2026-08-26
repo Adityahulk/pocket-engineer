@@ -19,6 +19,7 @@ export default function GitHubRepositoryScreen() {
     mutationFn: (repository: GitHubRepository) => api.createProject(repository, installationId),
     onSuccess: async (project) => {
       await queryClient.invalidateQueries({ queryKey: ['projects'] });
+      await queryClient.invalidateQueries({ queryKey: ['command-center'] });
       router.replace({ pathname: '/project/[id]', params: { id: project.id } });
     },
   });

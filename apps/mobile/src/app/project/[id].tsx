@@ -10,12 +10,16 @@ import { palette, radius, spacing, type } from '@/lib/theme';
 export default function ProjectScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const queryClient = useQueryClient();
-  const [goal, setGoal] = useState('Checkout returns 500 for customers without a discount. Find the root cause and fix it.');
+  const [goal, setGoal] = useState<string | null>(null);
   const [mode, setMode] = useState<'fix' | 'modify'>('fix');
+  const [autopilot, setAutopilot] = useState(false);
   const project = useQuery({ queryKey: ['project', id], queryFn: () => api.project(id!) });
   const tasks = useQuery({ queryKey: ['tasks', id], queryFn: () => api.tasks(id!), refetchInterval: 2_000 });
+  const composedGoal = goal ?? (project.data?.is_demo
+    ? 'Checkout returns 500 for customers without a discount. Find the root cause and fix it.'
+    : '');
   const createTask = useMutation({
-    mutationFn: () => api.createTask(id!, goal.trim(), mode),
+    mutationFn: () => api.createTask(id!, composedGoal.trim(), mode, autopilot ? 'autopilot' : 'assisted'),
     onSuccess: async (task) => {
       await queryClient.invalidateQueries({ queryKey: ['tasks', id] });
       router.push({ pathname: '/task/[id]', params: { id: task.id } });
@@ -26,13 +30,13 @@ export default function ProjectScreen() {
     <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <View style={styles.headerRow}>
         <View style={styles.projectMark}><Text style={styles.projectMarkText}>{project.data?.name.slice(0, 2).toUpperCase() ?? 'PE'}</Text></View>
-        <View style={styles.headerCopy}><Text style={styles.projectName}>{project.data?.name ?? 'Loading project…'}</Text><Text style={styles.repo} numberOfLines={1}>{project.data?.repo_url}</Text></View>
+        <View style={styles.headerCopy}><Text style={styles.projectName}>{project.data?.name ?? 'Loading project…'}{project.data?.is_demo ? ' · DEMO' : ''}</Text><Text style={styles.repo} numberOfLines={1}>{project.data?.repo_url}</Text></View>
         {project.data && <StatePill state={project.data.status} />}
       </View>
 
       {project.data && <View style={[styles.healthCard, project.data.health_status === 'incident' && styles.healthIncident]}>
         <View style={[styles.healthDot, { backgroundColor: project.data.health_status === 'incident' ? palette.red : palette.mint }]} />
-        <View style={styles.healthCopy}><Text style={styles.healthLabel}>{project.data.health_status === 'incident' ? 'INCIDENT DETECTED' : 'PRODUCTION HEALTHY'}</Text><Text style={styles.healthText}>{project.data.health_summary}</Text></View>
+        <View style={styles.healthCopy}><Text style={styles.healthLabel}>{project.data.is_demo ? 'DEMO INCIDENT' : project.data.health_status === 'incident' ? 'INCIDENT DETECTED' : 'PRODUCTION HEALTHY'}</Text><Text style={styles.healthText}>{project.data.health_summary}</Text></View>
         <Pressable onPress={() => router.push({ pathname: '/voice', params: { projectId: id! } })} style={styles.callEngineer}><Text style={styles.callEngineerText}>CALL ↗</Text></Pressable>
       </View>}
 
@@ -46,15 +50,18 @@ export default function ProjectScreen() {
             <Text style={[styles.modeText, mode === value && styles.modeTextActive]}>{value.toUpperCase()}</Text>
           </Pressable>
         ))}
+        <Pressable style={[styles.mode, autopilot && styles.modeActive]} onPress={() => setAutopilot((value) => !value)}>
+          <Text style={[styles.modeText, autopilot && styles.modeTextActive]}>{autopilot ? 'AUTOPILOT' : 'ASSISTED'}</Text>
+        </Pressable>
       </View>
 
       <View style={styles.composer}>
-        <TextInput value={goal} onChangeText={setGoal} placeholder="Describe the outcome, not the implementation…" placeholderTextColor="#667489"
+        <TextInput value={composedGoal} onChangeText={setGoal} placeholder="Describe the outcome, not the implementation…" placeholderTextColor="#667489"
           style={styles.input} multiline maxLength={8000} textAlignVertical="top" />
         <View style={styles.composerFooter}>
-          <Text style={styles.safety}>READ → PLAN → CHANGE → VERIFY</Text>
-          <Pressable disabled={goal.trim().length < 3 || createTask.isPending} onPress={() => createTask.mutate()}
-            style={({ pressed }) => [styles.runButton, pressed && styles.pressed, (goal.trim().length < 3 || createTask.isPending) && styles.disabled]}>
+          <Text style={styles.safety}>{autopilot ? 'ALEX WILL OPEN THE PR AFTER TESTS' : 'READ → PLAN → CHANGE → VERIFY'}</Text>
+          <Pressable disabled={composedGoal.trim().length < 3 || createTask.isPending} onPress={() => createTask.mutate()}
+            style={({ pressed }) => [styles.runButton, pressed && styles.pressed, (composedGoal.trim().length < 3 || createTask.isPending) && styles.disabled]}>
             {createTask.isPending ? <ActivityIndicator color={palette.ink} /> : <Text style={styles.runText}>START MISSION ↗</Text>}
           </Pressable>
         </View>

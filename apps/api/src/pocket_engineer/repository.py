@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-import os
 import shutil
-import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
 from .config import Settings
 from .models import Project
+from .sandbox import run_command
 
 
 class RepositoryError(RuntimeError):
@@ -18,30 +17,6 @@ class RepositoryError(RuntimeError):
 class Workspace:
     path: Path
     base_sha: str
-
-
-def run_command(
-    args: list[str],
-    cwd: Path,
-    timeout: int,
-    *,
-    input_text: str | None = None,
-    extra_env: dict[str, str] | None = None,
-) -> subprocess.CompletedProcess[str]:
-    env = os.environ.copy()
-    if extra_env:
-        env.update(extra_env)
-    return subprocess.run(
-        args,
-        cwd=cwd,
-        env=env,
-        text=True,
-        input=input_text,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        timeout=timeout,
-        check=False,
-    )
 
 
 class RepositoryManager:

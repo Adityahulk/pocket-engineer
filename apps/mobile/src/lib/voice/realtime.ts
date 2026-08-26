@@ -3,7 +3,7 @@ import { mediaDevices, RTCPeerConnection, RTCSessionDescription } from 'react-na
 import { handleRealtimeEvent, textMessage } from './protocol';
 import type { VoiceCallbacks, VoiceConnection } from './types';
 
-export function createRealtimeVoice(callbacks: VoiceCallbacks): VoiceConnection {
+export function createRealtimeVoice(callbacks: VoiceCallbacks, context: { projectId?: string; missionId?: string } = {}): VoiceConnection {
   let peer: RTCPeerConnection | null = null;
   let channel: ReturnType<RTCPeerConnection['createDataChannel']> | null = null;
   let stream: Awaited<ReturnType<typeof mediaDevices.getUserMedia>> | null = null;
@@ -20,7 +20,7 @@ export function createRealtimeVoice(callbacks: VoiceCallbacks): VoiceConnection 
           callbacks.onStatus('listening');
           channel?.send(JSON.stringify({ type: 'response.create', response: { instructions: 'Greet the user briefly and ask how you can help with their software.' } }));
         };
-        channel.onmessage = (event: { data?: unknown }) => handleRealtimeEvent(String(event.data), callbacks, channel!);
+        channel.onmessage = (event: { data?: unknown }) => handleRealtimeEvent(String(event.data), callbacks, channel!, context);
         const offer = await peer.createOffer({});
         await peer.setLocalDescription(offer);
         const response = await fetch('https://api.openai.com/v1/realtime/calls', {

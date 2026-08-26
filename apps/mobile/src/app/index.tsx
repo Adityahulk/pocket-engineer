@@ -2,11 +2,13 @@ import { useQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import * as WebBrowser from 'expo-web-browser';
 import { router } from 'expo-router';
+import { useEffect } from 'react';
 import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { registerPushNotifications } from '@/lib/notifications';
 import { palette, radius, shadow, spacing, type } from '@/lib/theme';
 
 export default function CommandCenterScreen() {
@@ -14,6 +16,10 @@ export default function CommandCenterScreen() {
   const center = useQuery({ queryKey: ['command-center'], queryFn: api.commandCenter, refetchInterval: 4_000 });
   const github = useQuery({ queryKey: ['github-config'], queryFn: api.githubConfig });
   const primaryProject = center.data?.projects.find((project) => project.health_status === 'incident') ?? center.data?.projects[0];
+  const hour = new Date().getHours();
+  const hello = hour < 12 ? 'Good morning.' : hour < 18 ? 'Good afternoon.' : 'Good evening.';
+
+  useEffect(() => { void registerPushNotifications(); }, []);
 
   function callEngineer(projectId?: string) {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -35,20 +41,20 @@ export default function CommandCenterScreen() {
         <View style={styles.brandRow}>
           <View style={styles.mark}><Text style={styles.markText}>PE</Text></View>
           <View><Text style={styles.brand}>Mission Control</Text><Text style={styles.brandSub}>POCKET ENGINEER</Text></View>
-          <View style={styles.livePill}><View style={styles.liveDot} /><Text style={styles.liveText}>LIVE</Text></View>
+          <View style={styles.livePill}><View style={[styles.liveDot, { backgroundColor: center.isError ? palette.red : palette.mint }]} /><Text style={styles.liveText}>{center.isError ? 'OFFLINE' : 'LIVE'}</Text></View>
         </View>
 
         <View style={styles.heroRow}>
-          <View style={styles.heroCopy}><Text style={styles.eyebrow}>YOUR SOFTWARE ESTATE</Text><Text style={styles.title}>Good morning.{`\n`}Here’s what needs you.</Text></View>
+          <View style={styles.heroCopy}><Text style={styles.eyebrow}>YOUR SOFTWARE ESTATE</Text><Text style={styles.title}>{hello}{`\n`}Talk to {center.data?.engineer_name ?? 'Alex'} and it gets done.</Text></View>
           <Pressable accessibilityLabel="Call your engineer" onPress={() => callEngineer(primaryProject?.id)} style={({ pressed }) => [styles.callButton, pressed && styles.pressed]}>
             <View style={styles.callWaves}><View style={styles.waveSmall} /><View style={styles.waveTall} /><View style={styles.waveMid} /></View><Text style={styles.callText}>CALL{`\n`}ENGINEER</Text>
           </Pressable>
         </View>
 
         <View style={styles.metrics}>
-          <Metric value={center.data?.incident_count ?? 0} label="INCIDENTS" color={center.data?.incident_count ? palette.red : palette.mint} />
-          <Metric value={center.data?.active_missions ?? 0} label="MISSIONS" color={palette.amber} />
-          <Metric value={center.data?.approval_count ?? 0} label="DECISIONS" color={palette.blue} last />
+          <Metric value={center.data?.incident_count ?? 0} label="INCIDENTS" color={center.data?.incident_count ? palette.red : palette.mint} onPress={() => primaryProject && router.push({ pathname: '/project/[id]', params: { id: primaryProject.id } })} />
+          <Metric value={center.data?.active_missions ?? 0} label="MISSIONS" color={palette.amber} onPress={() => router.push('/missions')} />
+          <Metric value={center.data?.approval_count ?? 0} label="DECISIONS" color={palette.blue} last onPress={() => router.push('/inbox')} />
         </View>
 
         {center.data?.incident_count ? <Pressable onPress={() => primaryProject && router.push({ pathname: '/project/[id]', params: { id: primaryProject.id } })} style={({ pressed }) => [styles.incidentCard, pressed && styles.pressed]}>
@@ -59,19 +65,19 @@ export default function CommandCenterScreen() {
 
         <SectionHeader title="AI ENGINEERS" count={center.data?.engineers.length ?? 0} />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.engineerRail}>
-          {center.data?.engineers.map((engineer) => <View key={engineer.id} style={styles.engineerCard}>
+          {center.data?.engineers.map((engineer) => <Pressable key={engineer.id} onPress={() => callEngineer(engineer.project_id ?? primaryProject?.id)} style={styles.engineerCard}>
             <View style={styles.engineerAvatar}><Text style={styles.engineerAvatarText}>{engineer.name.split(' ').map((part) => part[0]).join('').slice(0, 2)}</Text></View>
             <View style={styles.engineerStatus}><View style={[styles.engineerDot, { backgroundColor: engineer.status === 'available' ? palette.mint : palette.amber }]} /><Text style={styles.engineerStatusText}>{engineer.status.replaceAll('_', ' ').toUpperCase()}</Text></View>
             <Text style={styles.engineerName}>{engineer.name}</Text><Text style={styles.engineerSpecialty}>{engineer.specialty}</Text>
-          </View>)}
-          <Pressable onPress={() => callEngineer(primaryProject?.id)} style={styles.engineerCallCard}><Text style={styles.engineerCallIcon}>◉</Text><Text style={styles.engineerCallTitle}>Talk it through</Text><Text style={styles.engineerCallSub}>Call your on-call engineer</Text></Pressable>
+          </Pressable>)}
+          <Pressable onPress={() => callEngineer(primaryProject?.id)} style={styles.engineerCallCard}><Text style={styles.engineerCallIcon}>◉</Text><Text style={styles.engineerCallTitle}>Talk it through</Text><Text style={styles.engineerCallSub}>Say what you want done</Text></Pressable>
         </ScrollView>
 
         <SectionHeader title="MY SOFTWARE" count={center.data?.projects.length ?? 0} />
         {center.isError && <View style={styles.errorCard}><Text style={styles.errorTitle}>Mission Control is offline</Text><Text style={styles.errorText}>Start the API, then pull down to retry.{`\n`}{api.baseUrl}</Text></View>}
         {center.data?.projects.map((project) => <Pressable key={project.id} style={({ pressed }) => [styles.projectCard, pressed && styles.pressed]} onPress={() => router.push({ pathname: '/project/[id]', params: { id: project.id } })}>
           <View style={[styles.projectIcon, project.health_status === 'incident' && styles.projectIconIncident]}><Text style={styles.projectIconText}>{project.name.slice(0, 2).toUpperCase()}</Text></View>
-          <View style={styles.projectCopy}><Text style={styles.projectName}>{project.name}</Text><Text style={styles.projectHealth} numberOfLines={1}>{project.health_summary}</Text></View>
+          <View style={styles.projectCopy}><Text style={styles.projectName}>{project.name}{project.is_demo ? ' · DEMO' : ''}</Text><Text style={styles.projectHealth} numberOfLines={1}>{project.health_summary}</Text></View>
           <View style={styles.projectRight}><View style={[styles.healthDot, { backgroundColor: project.health_status === 'incident' ? palette.red : palette.mint }]} /><Text style={styles.projectArrow}>›</Text></View>
         </Pressable>)}
 
@@ -83,8 +89,8 @@ export default function CommandCenterScreen() {
   </View>;
 }
 
-function Metric({ value, label, color, last = false }: { value: number; label: string; color: string; last?: boolean }) {
-  return <View style={[styles.metric, !last && styles.metricBorder]}><Text style={[styles.metricValue, { color }]}>{value}</Text><Text style={styles.metricLabel}>{label}</Text></View>;
+function Metric({ value, label, color, last = false, onPress }: { value: number; label: string; color: string; last?: boolean; onPress?: () => void }) {
+  return <Pressable onPress={onPress} style={[styles.metric, !last && styles.metricBorder]}><Text style={[styles.metricValue, { color }]}>{value}</Text><Text style={styles.metricLabel}>{label}</Text></Pressable>;
 }
 function SectionHeader({ title, count }: { title: string; count: number }) {
   return <View style={styles.sectionHeader}><Text style={styles.sectionTitle}>{title}</Text><Text style={styles.sectionCount}>{count}</Text></View>;

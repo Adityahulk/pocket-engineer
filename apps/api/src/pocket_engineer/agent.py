@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import re
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
 from .config import Settings
-from .repository import run_command
+from .investigate import format_investigation
+from .sandbox import run_command, run_in_sandbox
 
 
 class AgentError(RuntimeError):
@@ -19,13 +21,9 @@ class AgentResult:
 
 
 class DemoAgent:
-    """A deterministic agent for the bundled checkout fixture.
+    """A deterministic agent for the bundled checkout fixture."""
 
-    It exists so the complete product loop can be run without sending source code
-    to a model provider. It intentionally refuses unknown repositories.
-    """
-
-    def execute(self, workspace: Path, goal: str) -> AgentResult:
+    def execute(self, workspace: Path, goal: str, investigation: dict | None = None) -> AgentResult:
         target = workspace / "src" / "checkout.py"
         if not target.exists():
             raise AgentError(
@@ -39,11 +37,13 @@ class DemoAgent:
         if vulnerable not in original:
             raise AgentError("The demo repository no longer contains the expected checkout defect.")
         target.write_text(original.replace(vulnerable, fixed))
+        evidence = format_investigation(investigation or {})
         return AgentResult(
             summary="Handled customers without a discount while preserving existing discounted checkout behavior.",
             root_cause=(
                 "The checkout total multiplied by `1 - discount_rate`, but `dict.get` returned `None` "
-                "for customers without a discount. Subtracting `None` raised a TypeError and surfaced as a 500."
+                "for customers without a discount. Subtracting `None` raised a TypeError and surfaced as a 500. "
+                f"{evidence}"
             ),
         )
 
@@ -54,15 +54,21 @@ class AiderAgent:
     def __init__(self, settings: Settings):
         self.settings = settings
 
-    def execute(self, workspace: Path, goal: str) -> AgentResult:
+    def execute(self, workspace: Path, goal: str, investigation: dict | None = None) -> AgentResult:
         if not shutil.which("aider"):
             raise AgentError("Aider is not installed. Run `uv sync --extra agent` in apps/api.")
+        evidence = format_investigation(investigation or {})
         prompt = (
             "You are implementing one focused task for Pocket Engineer. Inspect the repository before editing. "
             "Make the smallest correct change. Do not commit, push, deploy, read secrets, or change CI permissions. "
-            f"Task: {goal}"
+            f"Investigation notes:\n{evidence}\n"
+            f"Task: {goal}\n"
+            "When finished, print exactly two lines:\nSUMMARY: <one sentence>\nROOT_CAUSE: <one sentence>"
         )
-        result = run_command(
+        extra = {}
+        if self.settings.openai_api_key:
+            extra["OPENAI_API_KEY"] = self.settings.openai_api_key
+        result = run_in_sandbox(
             [
                 "aider",
                 "--yes-always",
@@ -75,13 +81,45 @@ class AiderAgent:
             ],
             workspace,
             self.settings.command_timeout_seconds,
+            self.settings,
+            network=True,
+            extra_env=extra,
+            include_model_keys=True,
         )
         if result.returncode != 0:
+            # Fall back to host execution if the sandbox image cannot run Aider.
+            result = run_command(
+                [
+                    "aider",
+                    "--yes-always",
+                    "--no-auto-commits",
+                    "--no-gitignore",
+                    "--model",
+                    self.settings.aider_model,
+                    "--message",
+                    prompt,
+                ],
+                workspace,
+                self.settings.command_timeout_seconds,
+                extra_env=extra,
+                include_model_keys=True,
+            )
+        if result.returncode != 0:
             raise AgentError(f"Aider failed: {result.stdout[-3000:]}")
-        return AgentResult(
-            summary="Implemented the requested focused change with the configured coding agent.",
-            root_cause="See the task evidence and patch for the agent's repository-specific diagnosis.",
-        )
+        return _parse_aider_result(result.stdout)
+
+
+def _parse_aider_result(stdout: str) -> AgentResult:
+    summary_match = re.search(r"^SUMMARY:\s*(.+)$", stdout, re.MULTILINE)
+    cause_match = re.search(r"^ROOT_CAUSE:\s*(.+)$", stdout, re.MULTILINE)
+    return AgentResult(
+        summary=(summary_match.group(1).strip() if summary_match else "Implemented the requested focused change."),
+        root_cause=(
+            cause_match.group(1).strip()
+            if cause_match
+            else "See the investigation notes and reviewed patch for the diagnosis."
+        ),
+    )
 
 
 def build_agent(settings: Settings):
@@ -90,4 +128,3 @@ def build_agent(settings: Settings):
     if settings.agent_provider == "aider":
         return AiderAgent(settings)
     raise AgentError(f"Unknown agent provider: {settings.agent_provider}")
-

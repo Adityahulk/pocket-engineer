@@ -5,7 +5,7 @@ import time
 from pathlib import Path
 
 from .config import Settings
-from .repository import run_command
+from .sandbox import run_in_sandbox
 
 
 def dependency_setup(workspace: Path) -> list[tuple[str, list[str]]]:
@@ -76,11 +76,12 @@ def verify(workspace: Path, settings: Settings) -> list[dict]:
     results: list[dict] = []
     for name, command in dependency_setup(workspace):
         started = time.monotonic()
-        result = run_command(
+        result = run_in_sandbox(
             command,
             workspace,
             settings.command_timeout_seconds,
-            extra_env={"CI": "true"},
+            settings,
+            network=True,
         )
         status = "passed" if result.returncode == 0 else "failed"
         results.append(
@@ -111,7 +112,13 @@ def verify(workspace: Path, settings: Settings) -> list[dict]:
             )
             continue
         started = time.monotonic()
-        result = run_command(command, workspace, settings.command_timeout_seconds, extra_env={"CI": "true"})
+        result = run_in_sandbox(
+            command,
+            workspace,
+            settings.command_timeout_seconds,
+            settings,
+            network=False,
+        )
         results.append(
             {
                 "name": name,
