@@ -16,6 +16,17 @@ def test_heroku_style_postgres_url_uses_psycopg_v3():
     assert settings.database_url == "postgresql+psycopg://pocket:pocket@localhost:5432/pocket"
 
 
+def test_cors_origins_come_from_global_env(monkeypatch):
+    monkeypatch.setenv("POCKET_CORS_ORIGINS", "https://expo.example,http://localhost:8081")
+    monkeypatch.setenv("CORS_ORIGINS", "http://127.0.0.1:8081")
+    settings = Settings(_env_file=None)
+    assert settings.allowed_origins == [
+        "https://expo.example",
+        "http://localhost:8081",
+        "http://127.0.0.1:8081",
+    ]
+
+
 def test_explicit_psycopg_and_sqlite_urls_are_unchanged():
     psycopg = "postgresql+psycopg://pocket:pocket@postgres:5432/pocket_engineer"
     sqlite = "sqlite:///./pocket-engineer.db"

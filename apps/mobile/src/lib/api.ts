@@ -1,10 +1,11 @@
 import { Platform } from 'react-native';
 
 import type { CommandCenter, GitHubRepository, Project, Task, TaskEvent, VoiceClientSecret, VoiceConfig, VoiceToolResult } from './types';
+import { publicEnv } from './env';
 import { supabase } from './supabase';
 
 const defaultHost = Platform.OS === 'android' ? 'http://10.0.2.2:8000' : 'http://localhost:8000';
-const baseUrl = process.env.EXPO_PUBLIC_API_URL ?? defaultHost;
+const baseUrl = publicEnv.apiUrl || defaultHost;
 
 async function authHeader(): Promise<Record<string, string>> {
   const accessToken = (await supabase?.auth.getSession())?.data.session?.access_token;

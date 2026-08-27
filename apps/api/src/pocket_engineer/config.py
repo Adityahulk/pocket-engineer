@@ -1,13 +1,16 @@
 from functools import lru_cache
+from os import environ
 from pathlib import Path
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+_REPO_ROOT = Path(__file__).resolve().parents[4]
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=(".env", "../../.env"),
+        env_file=(_REPO_ROOT / ".env", ".env", "../../.env"),
         env_prefix="POCKET_",
         extra="ignore",
     )
@@ -56,7 +59,8 @@ class Settings(BaseSettings):
 
     @property
     def allowed_origins(self) -> list[str]:
-        return [value.strip() for value in self.cors_origins.split(",") if value.strip()]
+        merged = f"{self.cors_origins},{environ.get('CORS_ORIGINS', '')}"
+        return list(dict.fromkeys(value.strip() for value in merged.split(",") if value.strip()))
 
     @property
     def allowed_auth_emails(self) -> set[str]:

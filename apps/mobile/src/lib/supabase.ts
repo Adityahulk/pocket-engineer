@@ -4,8 +4,10 @@ import { createClient } from '@supabase/supabase-js';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
-const supabasePublishableKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+import { publicEnv } from './env';
+
+const supabaseUrl = publicEnv.supabaseUrl;
+const supabasePublishableKey = publicEnv.supabasePublishableKey;
 
 const secureStorage = {
   getItem: async (key: string) => {
