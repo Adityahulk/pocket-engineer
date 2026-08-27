@@ -1,7 +1,7 @@
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "apps/api/Dockerfile"
-watchPatterns = ["apps/api/**", "fixtures/**", "apps/api/Dockerfile", "railway.toml"]
+watchPatterns = ["apps/api/**", "apps/mobile/**", "fixtures/**", "apps/api/Dockerfile", "railway.toml"]
 
 [deploy]
 healthcheckPath = "/health/ready"

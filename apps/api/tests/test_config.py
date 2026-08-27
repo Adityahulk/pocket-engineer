@@ -19,6 +19,7 @@ def test_heroku_style_postgres_url_uses_psycopg_v3():
 def test_cors_origins_come_from_global_env(monkeypatch):
     monkeypatch.setenv("POCKET_CORS_ORIGINS", "https://expo.example,http://localhost:8081")
     monkeypatch.setenv("CORS_ORIGINS", "http://127.0.0.1:8081")
+    monkeypatch.setenv("POCKET_PUBLIC_BASE_URL", "")
     settings = Settings(_env_file=None)
     assert settings.allowed_origins == [
         "https://expo.example",

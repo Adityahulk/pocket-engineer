@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 
 import { palette } from '@/lib/theme';
-import { authConfigured, supabase } from '@/lib/supabase';
+import { ensureSupabase, getSupabase } from '@/lib/supabase';
 
 type AuthContextValue = { session: Session | null; signOut: () => Promise<void> };
 const AuthContext = createContext<AuthContextValue>({ session: null, signOut: async () => undefined });
@@ -23,30 +23,42 @@ export function useAuth() {
 
 export function AuthGate({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(authConfigured);
+  const [configured, setConfigured] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!supabase) return;
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
+    let unsubscribe: (() => void) | undefined;
+    ensureSupabase().then((client) => {
+      setConfigured(Boolean(client));
+      if (!client) {
+        setLoading(false);
+        return;
+      }
+      client.auth.getSession().then(({ data }) => {
+        setSession(data.session);
+        setLoading(false);
+      });
+      const { data } = client.auth.onAuthStateChange((_event, nextSession) => {
+        setSession(nextSession);
+        setLoading(false);
+      });
+      unsubscribe = () => data.subscription.unsubscribe();
+    }).catch(() => {
+      setConfigured(false);
       setLoading(false);
     });
-    const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-      setLoading(false);
-    });
-    return () => data.subscription.unsubscribe();
+    return () => unsubscribe?.();
   }, []);
 
   const value = useMemo(() => ({
     session,
-    signOut: async () => { await supabase?.auth.signOut(); },
+    signOut: async () => { await getSupabase()?.auth.signOut(); },
   }), [session]);
 
   if (loading) {
     return <View style={styles.loading}><ActivityIndicator size="large" color={palette.mint} /></View>;
   }
-  if (authConfigured && !session) return <SignIn />;
+  if (configured && !session) return <SignIn />;
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
@@ -57,10 +69,12 @@ function SignIn() {
   const [error, setError] = useState('');
 
   const submit = async () => {
-    if (!supabase || !email.trim() || !password) return;
+    if (!email.trim() || !password) return;
+    const client = getSupabase();
+    if (!client) return;
     setSubmitting(true);
     setError('');
-    const result = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    const result = await client.auth.signInWithPassword({ email: email.trim(), password });
     if (result.error) setError(result.error.message);
     setSubmitting(false);
   };

@@ -152,6 +152,8 @@ class VoiceToolCall(BaseModel):
 class AuthConfigRead(BaseModel):
     required: bool
     provider: str
+    supabase_url: str = ""
+    supabase_publishable_key: str = ""
 
 
 class DeviceRegister(BaseModel):

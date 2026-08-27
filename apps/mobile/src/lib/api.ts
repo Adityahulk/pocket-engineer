@@ -1,14 +1,12 @@
-import { Platform } from 'react-native';
-
 import type { CommandCenter, GitHubRepository, Project, Task, TaskEvent, VoiceClientSecret, VoiceConfig, VoiceToolResult } from './types';
 import { publicEnv } from './env';
-import { supabase } from './supabase';
+import { ensureSupabase } from './supabase';
 
-const defaultHost = Platform.OS === 'android' ? 'http://10.0.2.2:8000' : 'http://localhost:8000';
-const baseUrl = publicEnv.apiUrl || defaultHost;
+const baseUrl = publicEnv.apiUrl;
 
 async function authHeader(): Promise<Record<string, string>> {
-  const accessToken = (await supabase?.auth.getSession())?.data.session?.access_token;
+  const client = await ensureSupabase();
+  const accessToken = (await client?.auth.getSession())?.data.session?.access_token;
   return accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
 }
 

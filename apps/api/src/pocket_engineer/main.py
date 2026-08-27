@@ -44,6 +44,7 @@ from .shipping import ShipError, ship_task
 from .signals import apply_alert, apply_github_event
 from .voice_session import VOICE_TOOLS, voice_instructions
 from .voice_tools import ACTIVE, execute_voice_tool
+from .webapp import mount_web_app, web_dist
 
 settings = get_settings()
 runner = TaskRunner(settings)
@@ -144,7 +145,12 @@ def readiness(session: Session = Depends(get_db)) -> dict:
 
 @app.get("/v1/auth/config", response_model=AuthConfigRead)
 def auth_config() -> AuthConfigRead:
-    return AuthConfigRead(required=settings.auth_mode != "disabled", provider=settings.auth_mode)
+    return AuthConfigRead(
+        required=settings.auth_mode != "disabled",
+        provider=settings.auth_mode,
+        supabase_url=settings.supabase_url,
+        supabase_publishable_key=settings.public_supabase_publishable_key,
+    )
 
 
 @app.get("/v1/github/config", response_model=GitHubConfigRead)
@@ -494,3 +500,6 @@ def cancel_task(task_id: str, request: Request, session: Session = Depends(get_d
     append_event(session, task, "task.cancelled", "Mission cancelled by the user")
     session.refresh(task)
     return task
+
+
+mount_web_app(app, web_dist(settings))

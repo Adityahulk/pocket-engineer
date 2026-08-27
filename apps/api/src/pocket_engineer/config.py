@@ -43,10 +43,12 @@ class Settings(BaseSettings):
     auth_mode: str = "disabled"
     auth_allowed_emails: str = ""
     supabase_url: str = ""
+    supabase_publishable_key: str = ""
     openai_api_key: str = ""
     realtime_api_url: str = "https://api.openai.com"
     realtime_model: str = "gpt-realtime-2.1"
     realtime_voice: str = "marin"
+    web_root: str = ""
 
     @field_validator("database_url")
     @classmethod
@@ -59,12 +61,16 @@ class Settings(BaseSettings):
 
     @property
     def allowed_origins(self) -> list[str]:
-        merged = f"{self.cors_origins},{environ.get('CORS_ORIGINS', '')}"
-        return list(dict.fromkeys(value.strip() for value in merged.split(",") if value.strip()))
+        merged = f"{self.cors_origins},{environ.get('CORS_ORIGINS', '')},{self.public_base_url}"
+        return list(dict.fromkeys(value.strip().rstrip("/") for value in merged.split(",") if value.strip()))
 
     @property
     def allowed_auth_emails(self) -> set[str]:
         return {value.strip().lower() for value in self.auth_allowed_emails.split(",") if value.strip()}
+
+    @property
+    def public_supabase_publishable_key(self) -> str:
+        return self.supabase_publishable_key or environ.get("EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "")
 
     @property
     def engineer_label(self) -> str:

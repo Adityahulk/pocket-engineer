@@ -25,7 +25,7 @@ export default function GitHubRepositoryScreen() {
   });
 
   if (!Number.isFinite(installationId)) {
-    return <View style={styles.center}><Text style={styles.title}>Installation ID missing</Text><Text style={styles.body}>Set the GitHub App setup URL to pocket-engineer://github.</Text></View>;
+    return <View style={styles.center}><Text style={styles.title}>Installation ID missing</Text><Text style={styles.body}>Set the GitHub App setup URL to this site’s /github path, or pocket-engineer://github for a native build.</Text></View>;
   }
 
   return <ScrollView style={styles.screen} contentContainerStyle={styles.content}>

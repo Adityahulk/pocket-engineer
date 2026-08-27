@@ -1,3 +1,17 @@
+FROM node:22-bookworm-slim AS web
+
+WORKDIR /web
+ENV CI=1
+ARG EXPO_PUBLIC_SUPABASE_URL=
+ARG EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+ENV EXPO_PUBLIC_SUPABASE_URL=$EXPO_PUBLIC_SUPABASE_URL
+ENV EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+ENV EXPO_PUBLIC_API_URL=
+COPY apps/mobile/package.json apps/mobile/package-lock.json ./
+RUN npm ci
+COPY apps/mobile ./
+RUN npx expo export --platform web --output-dir dist
+
 FROM node:22-bookworm-slim AS node-runtime
 
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
@@ -18,6 +32,8 @@ COPY apps/api/pyproject.toml apps/api/uv.lock ./
 RUN uv sync --frozen --extra agent --extra dev
 COPY apps/api/src ./src
 COPY fixtures /app/fixtures
+COPY --from=web /web/dist /app/web
+ENV POCKET_WEB_ROOT=/app/web
 
 EXPOSE 8000
 CMD ["sh", "-c", "uv run uvicorn pocket_engineer.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

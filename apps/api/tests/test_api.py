@@ -207,4 +207,9 @@ def test_readiness_and_auth_boundary(monkeypatch):
         assert client.get("/v1/projects").status_code == 401
         config = client.get("/v1/auth/config")
         assert config.status_code == 200
-        assert config.json() == {"required": True, "provider": "supabase"}
+        assert config.json() == {
+            "required": True,
+            "provider": "supabase",
+            "supabase_url": "https://example.supabase.co",
+            "supabase_publishable_key": "",
+        }
