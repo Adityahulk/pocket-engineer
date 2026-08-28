@@ -15,7 +15,8 @@
     "src/app/**/*.ts",
     "src/app/**/*.tsx",
     "src/lib/**/*.ts",
-    "src/components/state-pill.tsx",
+    "src/components/**/*.ts",
+    "src/components/**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
   ]

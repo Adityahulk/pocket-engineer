@@ -1,36 +1,77 @@
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { StatePill } from '@/components/state-pill';
+import { Avatar } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { EmptyState, ScreenIntro } from '@/components/ui/section';
+import { SkeletonCard } from '@/components/ui/skeleton';
 import { api } from '@/lib/api';
-import { palette, radius, spacing, type } from '@/lib/theme';
+import { layout, palette, spacing, type } from '@/lib/theme';
 
 export default function DecisionsScreen() {
   const decisions = useQuery({ queryKey: ['decisions'], queryFn: api.decisions, refetchInterval: 4_000 });
+  const loading = decisions.isLoading && !decisions.data;
+
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <Text style={styles.eyebrow}>HUMAN GATE</Text>
-      <Text style={styles.title}>Decisions</Text>
-      <Text style={styles.body}>Verified patches waiting for you. Approve to open a PR, or reject and tell Alex what to change.</Text>
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+      refreshControl={<RefreshControl refreshing={decisions.isFetching} onRefresh={() => decisions.refetch()} tintColor={palette.mint} />}>
+      <ScreenIntro
+        eyebrow="HUMAN GATE"
+        title="Decisions"
+        body="Verified patches waiting for you. Approve to open a PR, or reject and tell Alex what to change."
+      />
+
+      {loading ? <><SkeletonCard /><SkeletonCard /></> : null}
+
       {decisions.data?.map((task) => (
-        <Pressable key={task.id} style={({ pressed }) => [styles.card, pressed && { opacity: 0.72 }]} onPress={() => router.push({ pathname: '/task/[id]', params: { id: task.id } })}>
-          <View style={styles.top}><Text style={styles.mode}>{task.mode.toUpperCase()} · {task.priority.toUpperCase()}</Text><StatePill state={task.state} /></View>
+        <Card
+          key={task.id}
+          accessibilityLabel={`Review patch: ${task.goal}`}
+          onPress={() => router.push({ pathname: '/task/[id]', params: { id: task.id } })}
+          style={styles.card}>
+          <View style={styles.top}>
+            <Badge label={task.mode.toUpperCase()} tone="amber" dot={false} />
+            {task.priority !== 'normal' ? <Badge label={task.priority.toUpperCase()} tone="red" dot={false} /> : null}
+            <View style={styles.spacer} />
+            <StatePill state={task.state} />
+          </View>
           <Text style={styles.goal}>{task.goal}</Text>
-          <Text style={styles.meta}>{task.engineer_name} · TAP TO REVIEW PATCH</Text>
-        </Pressable>
+          <View style={styles.footer}>
+            <Avatar name={task.engineer_name} size={26} tone="mint" />
+            <Text style={styles.owner}>{task.engineer_name}</Text>
+            <Text style={styles.review}>REVIEW PATCH ›</Text>
+          </View>
+        </Card>
       ))}
-      {!decisions.isLoading && !decisions.data?.length && <Text style={styles.empty}>No pending decisions. Alex will ping you when a patch is verified.</Text>}
+
+      {!loading && !decisions.data?.length ? (
+        <EmptyState
+          glyph="✓"
+          title="Nothing waiting on you"
+          body="Alex will ping you the moment a patch passes verification and needs a human decision."
+        >
+          <Button label="SEE ACTIVE MISSIONS" variant="secondary" trailing="›" onPress={() => router.push('/missions')} />
+        </EmptyState>
+      ) : null}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: palette.ink }, content: { padding: spacing.lg, paddingBottom: 80, maxWidth: 760, width: '100%', alignSelf: 'center' },
-  eyebrow: { ...type.label, color: palette.mint, marginTop: 8 }, title: { color: palette.paper, fontSize: 32, fontWeight: '900', letterSpacing: -1, marginTop: 10 },
-  body: { color: palette.muted, fontSize: 14, lineHeight: 21, marginTop: 10, marginBottom: 22 },
-  card: { backgroundColor: palette.panel, borderColor: palette.line, borderWidth: 1, borderRadius: radius.md, padding: spacing.md, marginBottom: 10 },
-  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, mode: { ...type.label, color: palette.amber },
-  goal: { color: palette.paper, fontSize: 16, lineHeight: 22, fontWeight: '800', marginTop: 12 }, meta: { ...type.label, color: palette.muted, fontSize: 8, marginTop: 12 },
-  empty: { color: palette.muted, textAlign: 'center', padding: 28, lineHeight: 20 },
+  screen: { flex: 1, backgroundColor: palette.ink },
+  content: { padding: spacing.lg, paddingBottom: 80, maxWidth: layout.maxWidth, width: '100%', alignSelf: 'center' },
+  card: { marginBottom: 10 },
+  top: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  spacer: { flex: 1 },
+  goal: { ...type.heading, color: palette.paper, fontSize: 17, lineHeight: 24, marginTop: 14 },
+  footer: { flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 16 },
+  owner: { ...type.caption, color: palette.muted, flex: 1 },
+  review: { ...type.label, color: palette.mint, fontSize: 8 },
 });

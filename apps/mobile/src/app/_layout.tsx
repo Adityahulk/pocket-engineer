@@ -20,6 +20,8 @@ export default function RootLayout() {
           <Stack screenOptions={{
             headerStyle: { backgroundColor: palette.ink }, headerTintColor: palette.paper,
             headerShadowVisible: false, contentStyle: { backgroundColor: palette.ink }, animation: 'slide_from_right',
+            headerTitleStyle: { fontSize: 16, fontWeight: '800' },
+            headerBackButtonDisplayMode: 'minimal',
           }}>
             <Stack.Screen name="index" options={{ headerShown: false }} />
             <Stack.Screen name="inbox" options={{ title: 'Decisions' }} />

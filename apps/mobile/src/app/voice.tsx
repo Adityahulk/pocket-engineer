@@ -2,17 +2,26 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Animated, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Badge, LiveDot } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Touchable } from '@/components/ui/touchable';
 import { api } from '@/lib/api';
-import { palette, radius, spacing, type } from '@/lib/theme';
+import { glow, palette, radius, spacing, type } from '@/lib/theme';
 import { createRealtimeVoice } from '@/lib/voice/realtime';
 import type { CallStatus, MissionDraft, TranscriptTurn, VoiceConnection } from '@/lib/voice/types';
 
 const statusCopy: Record<CallStatus, string> = {
   idle: 'Ready to call', connecting: 'Engineer is joining…', listening: 'Listening', thinking: 'Thinking it through…',
   speaking: 'Engineer is speaking', ended: 'Call ended', error: 'Call unavailable',
+};
+
+const statusColor: Record<CallStatus, string> = {
+  idle: palette.muted, connecting: palette.amber, listening: palette.mint, thinking: palette.amber,
+  speaking: palette.blue, ended: palette.muted, error: palette.red,
 };
 
 export default function VoiceCallScreen() {
@@ -29,6 +38,7 @@ export default function VoiceCallScreen() {
   const voiceConfig = useQuery({ queryKey: ['voice-config'], queryFn: api.voiceConfig });
   const engineerName = voiceConfig.data?.engineer_name ?? 'Alex';
   const engineerTitle = voiceConfig.data?.engineer_title ?? 'Senior Engineer';
+  const live = status === 'listening' || status === 'speaking' || status === 'thinking';
 
   function mergeTranscript(turn: TranscriptTurn) {
     setTranscript((current) => {
@@ -111,67 +121,216 @@ export default function VoiceCallScreen() {
     setDraft({ goal, mode: 'fix', priority: 'normal' }); setTypedBrief('');
   }
 
+  function sendTypedBrief() {
+    const text = typedBrief.trim();
+    if (text.length < 2) return;
+    if (voiceConfig.data?.enabled && status !== 'idle' && status !== 'error' && status !== 'ended') {
+      connection.current?.sendText(text);
+    } else {
+      createTypedDraft();
+      return;
+    }
+    setTypedBrief('');
+  }
+
   return <View style={styles.screen}>
-    <View style={styles.glow} />
+    {/* Layered discs fake a radial spotlight behind the engineer avatar. */}
+    <View style={[styles.glow, styles.glowOuter]} />
+    <View style={[styles.glow, styles.glowMid]} />
+    <View style={[styles.glow, styles.glowInner]} />
     <SafeAreaView style={styles.safe}>
-      <View style={styles.topBar}><Text style={styles.callLabel}>ENGINEER CALL</Text><Text style={styles.encrypted}>● PRIVATE SESSION</Text></View>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Animated.View style={[styles.avatarHalo, { transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.08] }) }] }]}>
-          <View style={styles.avatar}><Text style={styles.avatarText}>PE</Text></View>
+      <View style={styles.topBar}>
+        <Text style={styles.callLabel}>ENGINEER CALL</Text>
+        <Badge label="PRIVATE SESSION" tone="mint" />
+      </View>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <Animated.View
+          style={[
+            styles.avatarHalo,
+            { transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.07] }) }] },
+            live && styles.avatarHaloLive,
+          ]}>
+          <View style={styles.avatarRing}>
+            <View style={styles.avatar}><Text style={styles.avatarText}>PE</Text></View>
+          </View>
         </Animated.View>
-        <Text style={styles.name}>{engineerName} · {engineerTitle}</Text>
+
+        <Text style={styles.name}>{engineerName}</Text>
+        <Text style={styles.role}>{engineerTitle.toUpperCase()}</Text>
         <Text style={styles.context}>{project.data?.name ?? 'Your software portfolio'}</Text>
-        <View style={styles.statusRow}>{(status === 'connecting' || status === 'thinking') && <ActivityIndicator size="small" color={palette.amber} />}<View style={[styles.statusDot, { backgroundColor: status === 'error' ? palette.red : status === 'speaking' ? palette.amber : palette.mint }]} /><Text style={styles.status}>{statusCopy[status]}</Text></View>
 
-        {transcript.length > 0 && <View style={styles.transcriptCard}>
-          <Text style={styles.transcriptLabel}>LIVE TRANSCRIPT</Text>
-          {transcript.slice(-5).map((turn) => <View key={`${turn.role}-${turn.id}`} style={styles.turn}>
-            <Text style={[styles.turnRole, turn.role === 'engineer' && styles.engineerRole]}>{turn.role === 'engineer' ? engineerName.toUpperCase() : 'YOU'}</Text>
-            <Text style={styles.turnText}>{turn.text}</Text>
-          </View>)}
-        </View>}
+        <View style={styles.statusRow}>
+          {status === 'connecting' || status === 'thinking' ? <ActivityIndicator size="small" color={palette.amber} /> : null}
+          <LiveDot color={statusColor[status]} pulse={live} size={7} />
+          <Text style={styles.status}>{statusCopy[status]}</Text>
+        </View>
 
-        {(status === 'listening' || status === 'thinking' || !voiceConfig.data?.enabled) && <View style={styles.talkRow}>
-          <TextInput value={typedBrief} onChangeText={setTypedBrief} placeholder={`Tell ${engineerName} what to do…`} placeholderTextColor="#65758A" style={styles.liveInput} />
-          <Pressable onPress={() => {
-            const text = typedBrief.trim();
-            if (text.length < 2) return;
-            if (voiceConfig.data?.enabled && status !== 'idle' && status !== 'error' && status !== 'ended') {
-              connection.current?.sendText(text);
-            } else {
-              createTypedDraft();
-              return;
-            }
-            setTypedBrief('');
-          }} style={styles.sendButton}><Text style={styles.sendText}>SEND</Text></Pressable>
-        </View>}
+        {transcript.length > 0 ? (
+          <Card style={styles.transcriptCard}>
+            <Text style={styles.transcriptLabel}>LIVE TRANSCRIPT</Text>
+            {transcript.slice(-5).map((turn) => (
+              <View key={`${turn.role}-${turn.id}`} style={styles.turn}>
+                <Text style={[styles.turnRole, turn.role === 'engineer' && styles.engineerRole]}>
+                  {turn.role === 'engineer' ? engineerName.toUpperCase() : 'YOU'}
+                </Text>
+                <Text style={styles.turnText}>{turn.text}</Text>
+              </View>
+            ))}
+          </Card>
+        ) : null}
 
-        {error && voiceConfig.data?.enabled && <Text style={styles.error}>{error}</Text>}
+        {status === 'listening' || status === 'thinking' || !voiceConfig.data?.enabled ? (
+          <View style={styles.talkRow}>
+            <TextInput
+              value={typedBrief}
+              onChangeText={setTypedBrief}
+              placeholder={`Tell ${engineerName} what to do…`}
+              placeholderTextColor={palette.mutedDeep}
+              style={styles.liveInput}
+              accessibilityLabel="Type your brief"
+              returnKeyType="send"
+              onSubmitEditing={sendTypedBrief}
+            />
+            <Button label="SEND" variant="light" onPress={sendTypedBrief} />
+          </View>
+        ) : null}
 
-        {draft && <View style={styles.draftCard}>
-          <Text style={styles.draftLabel}>MISSION DRAFT · {draft.priority.toUpperCase()}</Text>
-          <Text style={styles.draftTitle}>{draft.goal}</Text>
-          <Text style={styles.draftMeta}>{draft.mode.toUpperCase()} · {(draft.autonomy ?? 'assisted').toUpperCase()} · Starts as soon as you confirm or when {engineerName} already started it</Text>
-          <View style={styles.draftActions}><Pressable onPress={() => setDraft(null)} style={styles.secondaryButton}><Text style={styles.secondaryText}>EDIT LATER</Text></Pressable><Pressable onPress={() => startMission.mutate(draft)} style={styles.startButton}>{startMission.isPending ? <ActivityIndicator color={palette.ink} /> : <Text style={styles.startText}>START MISSION ↗</Text>}</Pressable></View>
-        </View>}
+        {error && voiceConfig.data?.enabled ? <Text style={styles.error}>{error}</Text> : null}
+
+        {draft ? (
+          <Card tone="paper" style={styles.draftCard}>
+            <Text style={styles.draftLabel}>MISSION DRAFT · {draft.priority.toUpperCase()}</Text>
+            <Text style={styles.draftTitle}>{draft.goal}</Text>
+            <Text style={styles.draftMeta}>
+              {draft.mode.toUpperCase()} · {(draft.autonomy ?? 'assisted').toUpperCase()} · Starts as soon as you confirm
+              or when {engineerName} already started it
+            </Text>
+            <View style={styles.draftActions}>
+              <Button label="EDIT LATER" variant="ghost" style={styles.draftSecondary} onPress={() => setDraft(null)} />
+              <Button
+                label="START MISSION"
+                trailing="↗"
+                style={styles.draftPrimary}
+                loading={startMission.isPending}
+                onPress={() => startMission.mutate(draft)}
+              />
+            </View>
+          </Card>
+        ) : null}
       </ScrollView>
 
       <View style={styles.controls}>
-        <Pressable onPress={toggleMute} style={[styles.control, muted && styles.controlActive]}><Text style={styles.controlIcon}>{muted ? '×' : '◦'}</Text><Text style={styles.controlText}>{muted ? 'UNMUTE' : 'MUTE'}</Text></Pressable>
-        {status === 'speaking' ? <Pressable onPress={() => connection.current?.interrupt()} style={[styles.control, styles.interrupt]}><Text style={styles.controlIcon}>Ⅱ</Text><Text style={styles.controlText}>INTERRUPT</Text></Pressable> : <View style={styles.wave}>{[8, 18, 28, 16, 9].map((height, i) => <View key={i} style={[styles.waveBar, { height }]} />)}</View>}
-        <Pressable onPress={endCall} style={[styles.control, styles.end]}><Text style={styles.endIcon}>⌁</Text><Text style={styles.endText}>END</Text></Pressable>
+        <Touchable
+          onPress={toggleMute}
+          accessibilityLabel={muted ? 'Unmute microphone' : 'Mute microphone'}
+          accessibilityState={{ selected: muted }}
+          style={[styles.control, muted && styles.controlActive]}
+          hoverStyle={styles.controlHover}>
+          <Text style={[styles.controlIcon, muted && styles.controlIconActive]}>{muted ? '×' : '◦'}</Text>
+          <Text style={[styles.controlText, muted && styles.controlIconActive]}>{muted ? 'UNMUTE' : 'MUTE'}</Text>
+        </Touchable>
+
+        {status === 'speaking' ? (
+          <Touchable
+            onPress={() => connection.current?.interrupt()}
+            accessibilityLabel="Interrupt the engineer"
+            style={[styles.control, styles.interrupt]}
+            hoverStyle={styles.controlHover}>
+            <Text style={styles.controlIcon}>Ⅱ</Text>
+            <Text style={styles.controlText}>INTERRUPT</Text>
+          </Touchable>
+        ) : (
+          <View style={styles.wave}>
+            {[8, 18, 28, 16, 9].map((height, index) => (
+              <Animated.View
+                key={index}
+                style={[
+                  styles.waveBar,
+                  { height },
+                  live && { transform: [{ scaleY: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1.25] }) }] },
+                ]}
+              />
+            ))}
+          </View>
+        )}
+
+        <Touchable onPress={endCall} accessibilityLabel="End call" style={[styles.control, styles.end]} hoverStyle={styles.endHover}>
+          <Text style={styles.endIcon}>⌁</Text>
+          <Text style={styles.endText}>END</Text>
+        </Touchable>
       </View>
     </SafeAreaView>
   </View>;
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#050A12', overflow: 'hidden' }, safe: { flex: 1 }, glow: { position: 'absolute', top: -120, alignSelf: 'center', width: 430, height: 430, borderRadius: 215, backgroundColor: '#123D51', opacity: 0.34 },
-  topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, height: 54 }, callLabel: { ...type.label, color: palette.paper, flex: 1 }, encrypted: { ...type.label, color: palette.mint, fontSize: 8 },
-  content: { alignItems: 'center', paddingHorizontal: spacing.lg, paddingBottom: 150, maxWidth: 680, width: '100%', alignSelf: 'center' }, avatarHalo: { marginTop: 28, width: 126, height: 126, borderRadius: 63, backgroundColor: '#153C45', alignItems: 'center', justifyContent: 'center' }, avatar: { width: 96, height: 96, borderRadius: 48, backgroundColor: palette.mint, alignItems: 'center', justifyContent: 'center', borderWidth: 6, borderColor: '#0D1A25' }, avatarText: { color: palette.ink, fontSize: 26, fontWeight: '900', letterSpacing: -1 },
-  name: { color: palette.paper, fontSize: 24, fontWeight: '900', letterSpacing: -0.6, marginTop: 22 }, context: { color: palette.muted, fontSize: 13, marginTop: 6 }, statusRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 13 }, statusDot: { width: 7, height: 7, borderRadius: 4 }, status: { color: '#C0CBD6', fontSize: 12, fontWeight: '700' },
-  transcriptCard: { width: '100%', backgroundColor: palette.panel, borderColor: palette.line, borderWidth: 1, borderRadius: radius.lg, padding: spacing.md, marginTop: 28 }, transcriptLabel: { ...type.label, color: palette.mint, marginBottom: 6 }, turn: { paddingTop: 11 }, turnRole: { ...type.label, color: palette.blue, fontSize: 8 }, engineerRole: { color: palette.mint }, turnText: { color: palette.paper, fontSize: 14, lineHeight: 20, marginTop: 4 },
-  talkRow: { width: '100%', flexDirection: 'row', gap: 8, marginTop: 18 }, liveInput: { flex: 1, minHeight: 46, backgroundColor: '#09121E', borderColor: palette.line, borderWidth: 1, borderRadius: 12, color: palette.paper, fontSize: 14, paddingHorizontal: 12 }, sendButton: { backgroundColor: palette.paper, borderRadius: 12, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14 }, sendText: { color: palette.ink, fontWeight: '900', fontSize: 10, letterSpacing: 1 },
-  error: { color: palette.red, textAlign: 'center', marginTop: 20, lineHeight: 20 }, draftCard: { width: '100%', backgroundColor: palette.paper, borderRadius: radius.lg, padding: spacing.md, marginTop: 22 }, draftLabel: { ...type.label, color: palette.mintDark }, draftTitle: { color: palette.ink, fontSize: 18, lineHeight: 24, fontWeight: '900', marginTop: 9 }, draftMeta: { color: '#607080', fontSize: 11, marginTop: 7 }, draftActions: { flexDirection: 'row', gap: 9, marginTop: 17 }, secondaryButton: { flex: 1, alignItems: 'center', justifyContent: 'center', borderColor: '#CCD4D7', borderWidth: 1, borderRadius: 12, minHeight: 46 }, secondaryText: { color: '#607080', fontWeight: '900', fontSize: 9, letterSpacing: 1 }, startButton: { flex: 1.4, backgroundColor: palette.mint, alignItems: 'center', justifyContent: 'center', borderRadius: 12, minHeight: 46 }, startText: { color: palette.ink, fontWeight: '900', fontSize: 9, letterSpacing: 1 },
-  controls: { position: 'absolute', bottom: 0, left: 0, right: 0, minHeight: 116, paddingHorizontal: 28, paddingTop: 15, paddingBottom: 26, backgroundColor: '#080F1AEE', borderTopWidth: 1, borderTopColor: palette.line, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' }, control: { width: 66, height: 66, borderRadius: 33, backgroundColor: palette.panelRaised, alignItems: 'center', justifyContent: 'center' }, controlActive: { backgroundColor: palette.amber }, interrupt: { backgroundColor: '#3A2D0B' }, end: { backgroundColor: '#E24B5A' }, controlIcon: { color: palette.paper, fontSize: 18, fontWeight: '900' }, controlText: { color: palette.paper, fontSize: 7, fontWeight: '900', letterSpacing: 0.8, marginTop: 3 }, endIcon: { color: '#FFF', fontSize: 23, fontWeight: '900', transform: [{ rotate: '135deg' }] }, endText: { color: '#FFF', fontSize: 7, fontWeight: '900', letterSpacing: 1, marginTop: 2 }, wave: { width: 66, height: 66, borderRadius: 33, backgroundColor: '#0D2025', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3 }, waveBar: { width: 3, borderRadius: 2, backgroundColor: palette.mint },
+  screen: { flex: 1, backgroundColor: palette.inkSunken, overflow: 'hidden' },
+  safe: { flex: 1 },
+  glow: { position: 'absolute', alignSelf: 'center', backgroundColor: '#123D51', opacity: 0.1 },
+  glowOuter: { top: -250, width: 640, height: 640, borderRadius: 320 },
+  glowMid: { top: -155, width: 450, height: 450, borderRadius: 225 },
+  glowInner: { top: -70, width: 285, height: 285, borderRadius: 143 },
+
+  topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, height: 56 },
+  callLabel: { ...type.label, color: palette.paper, flex: 1 },
+
+  content: { alignItems: 'center', paddingHorizontal: spacing.lg, paddingBottom: 160, maxWidth: 680, width: '100%', alignSelf: 'center' },
+  avatarHalo: { marginTop: 26, width: 132, height: 132, borderRadius: 66, backgroundColor: '#0F2C34', alignItems: 'center', justifyContent: 'center' },
+  avatarHaloLive: { backgroundColor: '#15414A' },
+  avatarRing: { width: 112, height: 112, borderRadius: 56, borderWidth: 1, borderColor: palette.mintLine, alignItems: 'center', justifyContent: 'center' },
+  avatar: {
+    width: 94, height: 94, borderRadius: 47, backgroundColor: palette.mint,
+    alignItems: 'center', justifyContent: 'center', ...glow('#0C6B52'),
+  },
+  avatarText: { color: palette.ink, fontSize: 26, fontWeight: '900', letterSpacing: -1 },
+
+  name: { ...type.title, color: palette.paper, fontSize: 25, marginTop: 22 },
+  role: { ...type.label, color: palette.mintText, fontSize: 8, marginTop: 7 },
+  context: { ...type.caption, color: palette.muted, marginTop: 10 },
+  statusRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 16, borderWidth: 1,
+    borderColor: palette.line, borderRadius: radius.pill, paddingHorizontal: 13, paddingVertical: 8,
+  },
+  status: { ...type.caption, color: palette.paper, fontWeight: '700' },
+
+  transcriptCard: { width: '100%', marginTop: 28 },
+  transcriptLabel: { ...type.label, color: palette.mint, marginBottom: 4 },
+  turn: { paddingTop: 13 },
+  turnRole: { ...type.label, color: palette.blue, fontSize: 8 },
+  engineerRole: { color: palette.mint },
+  turnText: { ...type.body, color: palette.paper, marginTop: 5 },
+
+  talkRow: { width: '100%', flexDirection: 'row', gap: 8, marginTop: 20 },
+  liveInput: {
+    flex: 1, minHeight: 46, backgroundColor: palette.panel, borderColor: palette.line, borderWidth: 1,
+    borderRadius: radius.md, color: palette.paper, fontSize: 14, paddingHorizontal: 13,
+  },
+  error: { ...type.body, color: palette.red, textAlign: 'center', marginTop: 20 },
+
+  draftCard: { width: '100%', marginTop: 24 },
+  draftLabel: { ...type.label, color: palette.mintDark },
+  draftTitle: { ...type.heading, color: palette.ink, fontSize: 18, lineHeight: 25, marginTop: 10 },
+  draftMeta: { ...type.caption, color: '#607080', fontSize: 11, marginTop: 8 },
+  draftActions: { flexDirection: 'row', gap: 9, marginTop: 18 },
+  draftSecondary: { flex: 1 },
+  draftPrimary: { flex: 1.4 },
+
+  controls: {
+    position: 'absolute', bottom: 0, left: 0, right: 0, minHeight: 118, paddingHorizontal: 28,
+    paddingTop: 16, paddingBottom: 26, backgroundColor: '#050A12EE', borderTopWidth: 1,
+    borderTopColor: palette.line, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around',
+  },
+  control: { width: 66, height: 66, borderRadius: 33, backgroundColor: palette.panelRaised, alignItems: 'center', justifyContent: 'center' },
+  controlHover: { backgroundColor: palette.panelHover },
+  controlActive: { backgroundColor: palette.amber },
+  interrupt: { backgroundColor: palette.amberWash, borderWidth: 1, borderColor: palette.amberLine },
+  controlIcon: { color: palette.paper, fontSize: 18, fontWeight: '900' },
+  controlIconActive: { color: palette.ink },
+  controlText: { color: palette.paper, fontSize: 7, fontWeight: '900', letterSpacing: 0.8, marginTop: 3 },
+  end: { backgroundColor: '#E24B5A' },
+  endHover: { backgroundColor: '#F05C6B' },
+  endIcon: { color: '#FFF', fontSize: 23, fontWeight: '900', transform: [{ rotate: '135deg' }] },
+  endText: { color: '#FFF', fontSize: 7, fontWeight: '900', letterSpacing: 1, marginTop: 2 },
+  wave: { width: 66, height: 66, borderRadius: 33, backgroundColor: palette.mintWash, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3 },
+  waveBar: { width: 3, borderRadius: 2, backgroundColor: palette.mint },
 });

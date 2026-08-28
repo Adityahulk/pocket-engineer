@@ -1,11 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { StatePill } from '@/components/state-pill';
+import { Avatar } from '@/components/ui/avatar';
+import { Badge, LiveDot } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { MissionProgress } from '@/components/ui/progress';
+import { Divider, SectionHeader } from '@/components/ui/section';
+import { Skeleton, SkeletonCard } from '@/components/ui/skeleton';
+import { Touchable } from '@/components/ui/touchable';
 import { api } from '@/lib/api';
-import { palette, radius, spacing, type } from '@/lib/theme';
+import { layout, palette, radius, spacing, type } from '@/lib/theme';
 
 export default function ProjectScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -25,70 +33,186 @@ export default function ProjectScreen() {
       router.push({ pathname: '/task/[id]', params: { id: task.id } });
     },
   });
+  const tooShort = composedGoal.trim().length < 3;
+  const incident = project.data?.health_status === 'incident';
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={styles.content}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}>
       <View style={styles.headerRow}>
-        <View style={styles.projectMark}><Text style={styles.projectMarkText}>{project.data?.name.slice(0, 2).toUpperCase() ?? 'PE'}</Text></View>
-        <View style={styles.headerCopy}><Text style={styles.projectName}>{project.data?.name ?? 'Loading project…'}{project.data?.is_demo ? ' · DEMO' : ''}</Text><Text style={styles.repo} numberOfLines={1}>{project.data?.repo_url}</Text></View>
-        {project.data && <StatePill state={project.data.status} />}
+        {project.data
+          ? <Avatar name={project.data.name} size={46} square tone={incident ? 'red' : 'amber'} />
+          : <Skeleton width={46} height={46} round={radius.md} />}
+        <View style={styles.headerCopy}>
+          {project.data ? (
+            <>
+              <View style={styles.nameRow}>
+                <Text style={styles.projectName} numberOfLines={1}>{project.data.name}</Text>
+                {project.data.is_demo ? <Badge label="DEMO" tone="violet" dot={false} /> : null}
+              </View>
+              <Text style={styles.repo} numberOfLines={1}>{project.data.repo_url}</Text>
+            </>
+          ) : (
+            <View style={styles.headerSkeleton}><Skeleton width="58%" height={16} /><Skeleton width="82%" height={11} /></View>
+          )}
+        </View>
+        {project.data ? <StatePill state={project.data.status} /> : null}
       </View>
 
-      {project.data && <View style={[styles.healthCard, project.data.health_status === 'incident' && styles.healthIncident]}>
-        <View style={[styles.healthDot, { backgroundColor: project.data.health_status === 'incident' ? palette.red : palette.mint }]} />
-        <View style={styles.healthCopy}><Text style={styles.healthLabel}>{project.data.is_demo ? 'DEMO INCIDENT' : project.data.health_status === 'incident' ? 'INCIDENT DETECTED' : 'PRODUCTION HEALTHY'}</Text><Text style={styles.healthText}>{project.data.health_summary}</Text></View>
-        <Pressable onPress={() => router.push({ pathname: '/voice', params: { projectId: id! } })} style={styles.callEngineer}><Text style={styles.callEngineerText}>CALL ↗</Text></Pressable>
-      </View>}
+      {project.data ? (
+        <Card tone={incident ? 'red' : 'mint'} style={styles.healthCard}>
+          <LiveDot color={incident ? palette.red : palette.mint} pulse={incident} size={9} />
+          <View style={styles.healthCopy}>
+            <Text style={styles.healthLabel}>
+              {project.data.is_demo ? 'DEMO INCIDENT' : incident ? 'INCIDENT DETECTED' : 'PRODUCTION HEALTHY'}
+            </Text>
+            <Text style={styles.healthText}>{project.data.health_summary}</Text>
+          </View>
+          <Button
+            label="CALL"
+            trailing="↗"
+            variant="light"
+            size="sm"
+            accessibilityLabel="Call your engineer about this project"
+            onPress={() => router.push({ pathname: '/voice', params: { projectId: id! } })}
+          />
+        </Card>
+      ) : null}
 
-      <View style={styles.rule} />
+      <Divider style={styles.rule} />
       <Text style={styles.eyebrow}>NEW MISSION</Text>
       <Text style={styles.title}>What outcome should your engineer own?</Text>
 
       <View style={styles.modeRow}>
         {(['fix', 'modify'] as const).map((value) => (
-          <Pressable key={value} style={[styles.mode, mode === value && styles.modeActive]} onPress={() => setMode(value)}>
-            <Text style={[styles.modeText, mode === value && styles.modeTextActive]}>{value.toUpperCase()}</Text>
-          </Pressable>
+          <Chip key={value} label={value.toUpperCase()} active={mode === value} onPress={() => setMode(value)} />
         ))}
-        <Pressable style={[styles.mode, autopilot && styles.modeActive]} onPress={() => setAutopilot((value) => !value)}>
-          <Text style={[styles.modeText, autopilot && styles.modeTextActive]}>{autopilot ? 'AUTOPILOT' : 'ASSISTED'}</Text>
-        </Pressable>
+        <View style={styles.modeSpacer} />
+        <Chip
+          label={autopilot ? 'AUTOPILOT' : 'ASSISTED'}
+          active={autopilot}
+          tone="violet"
+          onPress={() => setAutopilot((value) => !value)}
+        />
       </View>
 
       <View style={styles.composer}>
-        <TextInput value={composedGoal} onChangeText={setGoal} placeholder="Describe the outcome, not the implementation…" placeholderTextColor="#667489"
-          style={styles.input} multiline maxLength={8000} textAlignVertical="top" />
+        <TextInput
+          value={composedGoal}
+          onChangeText={setGoal}
+          placeholder="Describe the outcome, not the implementation…"
+          placeholderTextColor={palette.mutedDeep}
+          style={styles.input}
+          multiline
+          maxLength={8000}
+          textAlignVertical="top"
+          accessibilityLabel="Mission brief"
+        />
         <View style={styles.composerFooter}>
-          <Text style={styles.safety}>{autopilot ? 'ALEX WILL OPEN THE PR AFTER TESTS' : 'READ → PLAN → CHANGE → VERIFY'}</Text>
-          <Pressable disabled={composedGoal.trim().length < 3 || createTask.isPending} onPress={() => createTask.mutate()}
-            style={({ pressed }) => [styles.runButton, pressed && styles.pressed, (composedGoal.trim().length < 3 || createTask.isPending) && styles.disabled]}>
-            {createTask.isPending ? <ActivityIndicator color={palette.ink} /> : <Text style={styles.runText}>START MISSION ↗</Text>}
-          </Pressable>
+          <View style={styles.safetyCopy}>
+            <Text style={styles.safety}>{autopilot ? 'ALEX WILL OPEN THE PR AFTER TESTS' : 'READ → PLAN → CHANGE → VERIFY'}</Text>
+            <Text style={styles.counter}>{composedGoal.trim().length}/8000</Text>
+          </View>
+          <Button
+            label="START MISSION"
+            trailing="↗"
+            loading={createTask.isPending}
+            disabled={tooShort}
+            onPress={() => createTask.mutate()}
+          />
         </View>
       </View>
-      {createTask.isError && <Text style={styles.error}>{createTask.error.message}</Text>}
+      {createTask.isError ? <Text style={styles.error}>{createTask.error.message}</Text> : null}
 
-      <View style={styles.sectionHeader}><Text style={styles.eyebrow}>RECENT ACTIVITY</Text><Text style={styles.count}>{tasks.data?.length ?? 0}</Text></View>
+      <SectionHeader title="RECENT ACTIVITY" count={tasks.data?.length ?? 0} />
+      {tasks.isLoading && !tasks.data ? <SkeletonCard lines={2} /> : null}
       {tasks.data?.map((task) => (
-        <Pressable key={task.id} style={({ pressed }) => [styles.taskCard, pressed && styles.pressed]}
-          onPress={() => router.push({ pathname: '/task/[id]', params: { id: task.id } })}>
-          <View style={styles.taskTop}><Text style={styles.taskMode}>{task.mode.toUpperCase()}</Text><StatePill state={task.state} /></View>
-          <Text style={styles.taskGoal} numberOfLines={2}>{task.goal}</Text><Text style={styles.taskDate}>{new Date(task.created_at).toLocaleString()}</Text>
-        </Pressable>
+        <Card
+          key={task.id}
+          accessibilityLabel={`Open mission: ${task.goal}`}
+          onPress={() => router.push({ pathname: '/task/[id]', params: { id: task.id } })}
+          style={styles.taskCard}>
+          <View style={styles.taskTop}>
+            <Badge label={task.mode.toUpperCase()} tone="amber" dot={false} />
+            <View style={styles.modeSpacer} />
+            <StatePill state={task.state} />
+          </View>
+          <Text style={styles.taskGoal} numberOfLines={2}>{task.goal}</Text>
+          <MissionProgress state={task.state} />
+          <Text style={styles.taskDate}>{new Date(task.created_at).toLocaleString()}</Text>
+        </Card>
       ))}
-      {!tasks.isLoading && tasks.data?.length === 0 && <Text style={styles.noTasks}>No Missions yet. Your first verified outcome starts here.</Text>}
+      {!tasks.isLoading && tasks.data?.length === 0 ? (
+        <Text style={styles.noTasks}>No missions yet. Your first verified outcome starts here.</Text>
+      ) : null}
     </ScrollView>
   );
 }
 
+function Chip({ label, active, onPress, tone = 'paper' }: {
+  label: string; active: boolean; onPress: () => void; tone?: 'paper' | 'violet';
+}) {
+  const activeStyle = tone === 'violet' ? styles.chipActiveViolet : styles.chipActive;
+  return (
+    <Touchable
+      onPress={onPress}
+      accessibilityState={{ selected: active }}
+      style={[styles.chip, active && activeStyle]}
+      hoverStyle={active ? undefined : styles.chipHover}>
+      <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
+    </Touchable>
+  );
+}
+
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: palette.ink }, content: { padding: spacing.lg, paddingBottom: 80, maxWidth: 720, width: '100%', alignSelf: 'center' },
-  headerRow: { flexDirection: 'row', alignItems: 'center' }, projectMark: { width: 44, height: 44, borderRadius: 14, backgroundColor: palette.amber, alignItems: 'center', justifyContent: 'center' }, projectMarkText: { color: palette.ink, fontWeight: '900', fontSize: 11 }, headerCopy: { flex: 1, marginLeft: 12, marginRight: 10 }, projectName: { color: palette.paper, fontWeight: '900', fontSize: 18 }, repo: { color: palette.muted, fontSize: 11, marginTop: 4 },
-  rule: { height: 1, backgroundColor: palette.line, marginVertical: 28 }, eyebrow: { ...type.label, color: palette.mint }, title: { color: palette.paper, fontSize: 30, lineHeight: 36, letterSpacing: -1, fontWeight: '900', marginTop: 10 },
-  healthCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0D2824', borderColor: '#24554A', borderWidth: 1, borderRadius: radius.md, padding: 13, marginTop: 20 }, healthIncident: { backgroundColor: '#28141A', borderColor: '#71303C' }, healthDot: { width: 9, height: 9, borderRadius: 5 }, healthCopy: { flex: 1, marginLeft: 10 }, healthLabel: { ...type.label, color: palette.paper, fontSize: 8 }, healthText: { color: palette.muted, fontSize: 10, marginTop: 4 }, callEngineer: { backgroundColor: palette.paper, borderRadius: 10, paddingHorizontal: 11, paddingVertical: 9 }, callEngineerText: { ...type.label, color: palette.ink, fontSize: 8 },
-  modeRow: { flexDirection: 'row', gap: 8, marginTop: 20 }, mode: { borderColor: palette.line, borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 }, modeActive: { backgroundColor: palette.paper, borderColor: palette.paper }, modeText: { ...type.label, color: palette.muted }, modeTextActive: { color: palette.ink },
-  composer: { backgroundColor: palette.panel, borderRadius: radius.lg, borderWidth: 1, borderColor: palette.line, marginTop: 12, overflow: 'hidden' }, input: { minHeight: 142, color: palette.paper, padding: spacing.md, fontSize: 16, lineHeight: 24 }, composerFooter: { borderTopWidth: 1, borderTopColor: palette.line, padding: 12, flexDirection: 'row', alignItems: 'center' }, safety: { ...type.label, color: '#5D6D80', flex: 1, fontSize: 8 },
-  runButton: { backgroundColor: palette.mint, minWidth: 120, height: 42, paddingHorizontal: 15, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }, runText: { color: palette.ink, fontSize: 10, fontWeight: '900', letterSpacing: 1 }, disabled: { opacity: 0.4 }, pressed: { opacity: 0.72 }, error: { color: palette.red, marginTop: 10 },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', marginTop: 38, marginBottom: 12 }, count: { color: palette.muted, marginLeft: 'auto', fontSize: 12 },
-  taskCard: { backgroundColor: palette.panel, borderColor: palette.line, borderWidth: 1, borderRadius: radius.md, padding: spacing.md, marginBottom: 10 }, taskTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, taskMode: { ...type.label, color: palette.amber }, taskGoal: { color: palette.paper, fontSize: 14, lineHeight: 21, fontWeight: '700', marginTop: 14 }, taskDate: { color: palette.muted, fontSize: 10, marginTop: 9 }, noTasks: { color: palette.muted, textAlign: 'center', padding: 24, lineHeight: 20 },
+  screen: { flex: 1, backgroundColor: palette.ink },
+  content: { padding: spacing.lg, paddingBottom: 80, maxWidth: layout.narrowWidth, width: '100%', alignSelf: 'center' },
+
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  headerCopy: { flex: 1 },
+  headerSkeleton: { gap: 8 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  projectName: { ...type.heading, color: palette.paper, flexShrink: 1 },
+  repo: { ...type.caption, color: palette.muted, fontSize: 11, marginTop: 4 },
+
+  healthCard: { flexDirection: 'row', alignItems: 'center', gap: 11, marginTop: 20 },
+  healthCopy: { flex: 1 },
+  healthLabel: { ...type.label, color: palette.paper, fontSize: 8 },
+  healthText: { ...type.caption, color: palette.muted, fontSize: 11, marginTop: 4 },
+
+  rule: { marginVertical: spacing.xl },
+  eyebrow: { ...type.label, color: palette.mint },
+  title: { ...type.title, color: palette.paper, marginTop: 10 },
+
+  modeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 22 },
+  modeSpacer: { flex: 1 },
+  chip: { borderColor: palette.line, borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: 15, paddingVertical: 9 },
+  chipHover: { borderColor: palette.lineBright, backgroundColor: palette.panel },
+  chipActive: { backgroundColor: palette.paper, borderColor: palette.paper },
+  chipActiveViolet: { backgroundColor: palette.violet, borderColor: palette.violet },
+  chipText: { ...type.label, color: palette.muted },
+  chipTextActive: { color: palette.ink },
+
+  composer: {
+    backgroundColor: palette.panel, borderRadius: radius.lg, borderWidth: 1,
+    borderColor: palette.line, marginTop: 12, overflow: 'hidden',
+  },
+  input: { minHeight: 148, color: palette.paper, padding: spacing.md, fontSize: 16, lineHeight: 24 },
+  composerFooter: {
+    borderTopWidth: 1, borderTopColor: palette.line, padding: 12,
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+  },
+  safetyCopy: { flex: 1, gap: 5 },
+  safety: { ...type.label, color: palette.mutedDeep, fontSize: 8 },
+  counter: { ...type.label, color: palette.mutedDeep, fontSize: 8, opacity: 0.7 },
+  error: { ...type.body, color: palette.red, marginTop: 12 },
+
+  taskCard: { marginBottom: 10, gap: 14 },
+  taskTop: { flexDirection: 'row', alignItems: 'center' },
+  taskGoal: { ...type.bodyStrong, color: palette.paper },
+  taskDate: { ...type.label, color: palette.mutedDeep, fontSize: 8 },
+  noTasks: { ...type.body, color: palette.muted, textAlign: 'center', padding: spacing.lg },
 });

@@ -1,9 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
+import { EmptyState, ScreenIntro } from '@/components/ui/section';
+import { SkeletonCard } from '@/components/ui/skeleton';
 import { api } from '@/lib/api';
-import { palette, radius, spacing, type } from '@/lib/theme';
+import { layout, palette, radius, spacing, type } from '@/lib/theme';
 import type { GitHubRepository } from '@/lib/types';
 
 export default function GitHubRepositoryScreen() {
@@ -25,24 +29,67 @@ export default function GitHubRepositoryScreen() {
   });
 
   if (!Number.isFinite(installationId)) {
-    return <View style={styles.center}><Text style={styles.title}>Installation ID missing</Text><Text style={styles.body}>Set the GitHub App setup URL to this site’s /github path, or pocket-engineer://github for a native build.</Text></View>;
+    return (
+      <View style={styles.center}>
+        <EmptyState
+          glyph="⚙"
+          title="Installation ID missing"
+          body="Set the GitHub App setup URL to this site’s /github path, or pocket-engineer://github for a native build."
+        />
+      </View>
+    );
   }
 
-  return <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-    <Text style={styles.eyebrow}>GITHUB APP INSTALLED</Text><Text style={styles.title}>Choose a repository</Text>
-    <Text style={styles.body}>Pocket Engineer receives access only to repositories selected during installation.</Text>
-    {repositories.isLoading && <ActivityIndicator style={styles.loader} color={palette.mint} />}
-    {repositories.isError && <Text style={styles.error}>{repositories.error.message}</Text>}
-    {repositories.data?.map((repository) => <Pressable key={repository.full_name} onPress={() => connect.mutate(repository)}
-      style={({ pressed }) => [styles.card, pressed && { opacity: 0.72 }]}>
-      <View style={styles.icon}><Text style={styles.iconText}>GH</Text></View><View style={styles.copy}><Text style={styles.name}>{repository.full_name}</Text><Text style={styles.meta}>{repository.private ? 'PRIVATE' : 'PUBLIC'} · {repository.default_branch}</Text></View><Text style={styles.arrow}>›</Text>
-    </Pressable>)}
-    {connect.isError && <Text style={styles.error}>{connect.error.message}</Text>}
-  </ScrollView>;
+  return (
+    <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScreenIntro
+        eyebrow="GITHUB APP INSTALLED"
+        title="Choose a repository"
+        body="Pocket Engineer receives access only to repositories selected during installation."
+      />
+
+      {repositories.isLoading ? <><SkeletonCard lines={1} /><SkeletonCard lines={1} /></> : null}
+      {repositories.isError ? <Text style={styles.error}>{repositories.error.message}</Text> : null}
+
+      {repositories.data?.map((repository) => (
+        <Card
+          key={repository.full_name}
+          accessibilityLabel={`Connect ${repository.full_name}`}
+          onPress={() => connect.mutate(repository)}
+          style={styles.card}>
+          <View style={styles.icon}><Text style={styles.iconText}>GH</Text></View>
+          <View style={styles.copy}>
+            <Text style={styles.name} numberOfLines={1}>{repository.full_name}</Text>
+            <Text style={styles.meta}>{repository.default_branch}</Text>
+          </View>
+          <Badge label={repository.private ? 'PRIVATE' : 'PUBLIC'} tone={repository.private ? 'mint' : 'neutral'} dot={false} />
+          <Text style={styles.arrow}>›</Text>
+        </Card>
+      ))}
+
+      {!repositories.isLoading && repositories.data?.length === 0 ? (
+        <EmptyState
+          glyph="◌"
+          title="No repositories shared"
+          body="Open the GitHub App installation settings and grant access to at least one repository."
+        />
+      ) : null}
+
+      {connect.isError ? <Text style={styles.error}>{connect.error.message}</Text> : null}
+    </ScrollView>
+  );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: palette.ink }, content: { padding: spacing.lg, paddingBottom: 60, maxWidth: 720, width: '100%', alignSelf: 'center' }, center: { flex: 1, backgroundColor: palette.ink, alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
-  eyebrow: { ...type.label, color: palette.mint, marginTop: 16 }, title: { color: palette.paper, fontSize: 30, fontWeight: '900', letterSpacing: -1, marginTop: 10 }, body: { color: palette.muted, fontSize: 14, lineHeight: 21, marginTop: 10, marginBottom: 22, textAlign: 'left' }, loader: { marginTop: 30 },
-  card: { flexDirection: 'row', alignItems: 'center', backgroundColor: palette.panel, borderWidth: 1, borderColor: palette.line, borderRadius: radius.md, padding: spacing.md, marginBottom: 10 }, icon: { width: 40, height: 40, borderRadius: 12, backgroundColor: palette.paper, alignItems: 'center', justifyContent: 'center' }, iconText: { color: palette.ink, fontWeight: '900', fontSize: 10 }, copy: { flex: 1, marginLeft: 12 }, name: { color: palette.paper, fontSize: 14, fontWeight: '800' }, meta: { ...type.label, color: palette.muted, fontSize: 8, marginTop: 5 }, arrow: { color: palette.muted, fontSize: 26 }, error: { color: palette.red, lineHeight: 20, marginTop: 12 },
+  screen: { flex: 1, backgroundColor: palette.ink },
+  content: { padding: spacing.lg, paddingBottom: 60, maxWidth: layout.narrowWidth, width: '100%', alignSelf: 'center' },
+  center: { flex: 1, backgroundColor: palette.ink, alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
+  card: { flexDirection: 'row', alignItems: 'center', gap: 11, marginBottom: 10 },
+  icon: { width: 40, height: 40, borderRadius: radius.md, backgroundColor: palette.paper, alignItems: 'center', justifyContent: 'center' },
+  iconText: { color: palette.ink, fontWeight: '900', fontSize: 10 },
+  copy: { flex: 1 },
+  name: { ...type.bodyStrong, color: palette.paper },
+  meta: { ...type.label, color: palette.muted, fontSize: 8, marginTop: 5 },
+  arrow: { color: palette.muted, fontSize: 24 },
+  error: { ...type.body, color: palette.red, marginTop: 12 },
 });

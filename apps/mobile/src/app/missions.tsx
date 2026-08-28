@@ -1,36 +1,71 @@
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { StatePill } from '@/components/state-pill';
+import { Avatar } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { MissionProgress } from '@/components/ui/progress';
+import { EmptyState, ScreenIntro } from '@/components/ui/section';
+import { SkeletonCard } from '@/components/ui/skeleton';
 import { api } from '@/lib/api';
-import { palette, radius, spacing, type } from '@/lib/theme';
+import { layout, palette, spacing, type } from '@/lib/theme';
 
 export default function MissionsScreen() {
   const missions = useQuery({ queryKey: ['missions'], queryFn: api.missions, refetchInterval: 3_000 });
+  const loading = missions.isLoading && !missions.data;
+
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <Text style={styles.eyebrow}>IN FLIGHT</Text>
-      <Text style={styles.title}>Active missions</Text>
-      <Text style={styles.body}>Work Alex is investigating, changing, or verifying right now.</Text>
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+      refreshControl={<RefreshControl refreshing={missions.isFetching} onRefresh={() => missions.refetch()} tintColor={palette.mint} />}>
+      <ScreenIntro
+        eyebrow="IN FLIGHT"
+        eyebrowTone={palette.amber}
+        title="Active missions"
+        body="Work Alex is investigating, changing, or verifying right now."
+      />
+
+      {loading ? <><SkeletonCard lines={3} /><SkeletonCard lines={3} /></> : null}
+
       {missions.data?.map((task) => (
-        <Pressable key={task.id} style={({ pressed }) => [styles.card, pressed && { opacity: 0.72 }]} onPress={() => router.push({ pathname: '/task/[id]', params: { id: task.id } })}>
-          <View style={styles.top}><Text style={styles.mode}>{task.autonomy.toUpperCase()}</Text><StatePill state={task.state} /></View>
-          <Text style={styles.goal}>{task.goal}</Text>
-          <Text style={styles.meta}>{task.engineer_name} · {task.mode.toUpperCase()}</Text>
-        </Pressable>
+        <Card
+          key={task.id}
+          accessibilityLabel={`Open mission: ${task.goal}`}
+          onPress={() => router.push({ pathname: '/task/[id]', params: { id: task.id } })}
+          style={styles.card}>
+          <View style={styles.top}>
+            <Badge label={task.autonomy.toUpperCase()} tone={task.autonomy === 'autopilot' ? 'violet' : 'mint'} dot={false} />
+            <Badge label={task.mode.toUpperCase()} tone="neutral" dot={false} />
+            <View style={styles.spacer} />
+            <Avatar name={task.engineer_name} size={26} tone="mint" />
+          </View>
+          <Text style={styles.goal} numberOfLines={3}>{task.goal}</Text>
+          <MissionProgress state={task.state} />
+        </Card>
       ))}
-      {!missions.isLoading && !missions.data?.length && <Text style={styles.empty}>No active missions. Call Alex and say what you want done.</Text>}
+
+      {!loading && !missions.data?.length ? (
+        <EmptyState
+          glyph="◉"
+          title="No missions in flight"
+          body="Call Alex, describe the outcome you want, and the mission starts itself."
+        >
+          <Button label="CALL ENGINEER" trailing="↗" onPress={() => router.push('/voice')} />
+        </EmptyState>
+      ) : null}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: palette.ink }, content: { padding: spacing.lg, paddingBottom: 80, maxWidth: 760, width: '100%', alignSelf: 'center' },
-  eyebrow: { ...type.label, color: palette.amber, marginTop: 8 }, title: { color: palette.paper, fontSize: 32, fontWeight: '900', letterSpacing: -1, marginTop: 10 },
-  body: { color: palette.muted, fontSize: 14, lineHeight: 21, marginTop: 10, marginBottom: 22 },
-  card: { backgroundColor: palette.panel, borderColor: palette.line, borderWidth: 1, borderRadius: radius.md, padding: spacing.md, marginBottom: 10 },
-  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, mode: { ...type.label, color: palette.mint },
-  goal: { color: palette.paper, fontSize: 16, lineHeight: 22, fontWeight: '800', marginTop: 12 }, meta: { ...type.label, color: palette.muted, fontSize: 8, marginTop: 12 },
-  empty: { color: palette.muted, textAlign: 'center', padding: 28, lineHeight: 20 },
+  screen: { flex: 1, backgroundColor: palette.ink },
+  content: { padding: spacing.lg, paddingBottom: 80, maxWidth: layout.maxWidth, width: '100%', alignSelf: 'center' },
+  card: { marginBottom: 10, gap: 16 },
+  top: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  spacer: { flex: 1 },
+  goal: { ...type.heading, color: palette.paper, fontSize: 16, lineHeight: 23 },
 });

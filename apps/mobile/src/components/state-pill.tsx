@@ -1,23 +1,11 @@
-import { StyleSheet, Text, View } from 'react-native';
-
-import { palette, type } from '@/lib/theme';
+import { Badge, type BadgeTone } from '@/components/ui/badge';
+import { humanState } from '@/lib/mission';
 
 const success = new Set(['ready', 'ready_for_review', 'completed']);
 const danger = new Set(['failed', 'cancelled']);
 
 export function StatePill({ state }: { state: string }) {
-  const color = danger.has(state) ? palette.red : success.has(state) ? palette.mint : palette.amber;
-  return (
-    <View style={[styles.pill, { borderColor: color }]}>
-      <View style={[styles.dot, { backgroundColor: color }]} />
-      <Text style={[styles.text, { color }]}>{state.replaceAll('_', ' ').toUpperCase()}</Text>
-    </View>
-  );
+  const tone: BadgeTone = danger.has(state) ? 'red' : success.has(state) ? 'mint' : 'amber';
+  const inFlight = !success.has(state) && !danger.has(state) && state !== 'ready';
+  return <Badge label={humanState(state)} tone={tone} pulse={inFlight} />;
 }
-
-const styles = StyleSheet.create({
-  pill: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 6 },
-  dot: { width: 6, height: 6, borderRadius: 3 },
-  text: type.label,
-});
-
