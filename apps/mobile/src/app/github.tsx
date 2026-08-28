@@ -4,6 +4,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { Icon } from '@/components/ui/icon';
 import { EmptyState, ScreenIntro } from '@/components/ui/section';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { api } from '@/lib/api';
@@ -32,7 +33,7 @@ export default function GitHubRepositoryScreen() {
     return (
       <View style={styles.center}>
         <EmptyState
-          glyph="⚙"
+          icon="settings"
           title="Installation ID missing"
           body="Set the GitHub App setup URL to this site’s /github path, or pocket-engineer://github for a native build."
         />
@@ -57,19 +58,23 @@ export default function GitHubRepositoryScreen() {
           accessibilityLabel={`Connect ${repository.full_name}`}
           onPress={() => connect.mutate(repository)}
           style={styles.card}>
-          <View style={styles.icon}><Text style={styles.iconText}>GH</Text></View>
+          <View style={styles.icon}><Icon name="github" size={18} color={palette.ink} /></View>
           <View style={styles.copy}>
             <Text style={styles.name} numberOfLines={1}>{repository.full_name}</Text>
             <Text style={styles.meta}>{repository.default_branch}</Text>
           </View>
-          <Badge label={repository.private ? 'PRIVATE' : 'PUBLIC'} tone={repository.private ? 'mint' : 'neutral'} dot={false} />
-          <Text style={styles.arrow}>›</Text>
+          <Badge
+            label={repository.private ? 'PRIVATE' : 'PUBLIC'}
+            tone={repository.private ? 'accent' : 'neutral'}
+            icon={repository.private ? 'lock' : 'globe'}
+          />
+          <Icon name="chevron-right" size={16} color={palette.mutedDeep} />
         </Card>
       ))}
 
       {!repositories.isLoading && repositories.data?.length === 0 ? (
         <EmptyState
-          glyph="◌"
+          icon="folder"
           title="No repositories shared"
           body="Open the GitHub App installation settings and grant access to at least one repository."
         />
@@ -86,10 +91,8 @@ const styles = StyleSheet.create({
   center: { flex: 1, backgroundColor: palette.ink, alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
   card: { flexDirection: 'row', alignItems: 'center', gap: 11, marginBottom: 10 },
   icon: { width: 40, height: 40, borderRadius: radius.md, backgroundColor: palette.paper, alignItems: 'center', justifyContent: 'center' },
-  iconText: { color: palette.ink, fontWeight: '900', fontSize: 10 },
   copy: { flex: 1 },
   name: { ...type.bodyStrong, color: palette.paper },
   meta: { ...type.label, color: palette.muted, fontSize: 8, marginTop: 5 },
-  arrow: { color: palette.muted, fontSize: 24 },
   error: { ...type.body, color: palette.red, marginTop: 12 },
 });

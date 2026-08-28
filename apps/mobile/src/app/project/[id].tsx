@@ -51,7 +51,7 @@ export default function ProjectScreen() {
             <>
               <View style={styles.nameRow}>
                 <Text style={styles.projectName} numberOfLines={1}>{project.data.name}</Text>
-                {project.data.is_demo ? <Badge label="DEMO" tone="violet" dot={false} /> : null}
+                {project.data.is_demo ? <Badge label="DEMO" tone="violet" /> : null}
               </View>
               <Text style={styles.repo} numberOfLines={1}>{project.data.repo_url}</Text>
             </>
@@ -63,8 +63,8 @@ export default function ProjectScreen() {
       </View>
 
       {project.data ? (
-        <Card tone={incident ? 'red' : 'mint'} style={styles.healthCard}>
-          <LiveDot color={incident ? palette.red : palette.mint} pulse={incident} size={9} />
+        <Card tone={incident ? 'red' : 'accent'} style={styles.healthCard}>
+          <LiveDot color={incident ? palette.red : palette.citron} pulse={incident} size={9} />
           <View style={styles.healthCopy}>
             <Text style={styles.healthLabel}>
               {project.data.is_demo ? 'DEMO INCIDENT' : incident ? 'INCIDENT DETECTED' : 'PRODUCTION HEALTHY'}
@@ -73,7 +73,7 @@ export default function ProjectScreen() {
           </View>
           <Button
             label="CALL"
-            trailing="↗"
+            icon="mic"
             variant="light"
             size="sm"
             accessibilityLabel="Call your engineer about this project"
@@ -118,7 +118,7 @@ export default function ProjectScreen() {
           </View>
           <Button
             label="START MISSION"
-            trailing="↗"
+            trailingIcon="arrow-up-right"
             loading={createTask.isPending}
             disabled={tooShort}
             onPress={() => createTask.mutate()}
@@ -136,7 +136,7 @@ export default function ProjectScreen() {
           onPress={() => router.push({ pathname: '/task/[id]', params: { id: task.id } })}
           style={styles.taskCard}>
           <View style={styles.taskTop}>
-            <Badge label={task.mode.toUpperCase()} tone="amber" dot={false} />
+            <Badge label={task.mode.toUpperCase()} tone="amber" />
             <View style={styles.modeSpacer} />
             <StatePill state={task.state} />
           </View>
@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
   healthText: { ...type.caption, color: palette.muted, fontSize: 11, marginTop: 4 },
 
   rule: { marginVertical: spacing.xl },
-  eyebrow: { ...type.label, color: palette.mint },
+  eyebrow: { ...type.label, color: palette.citron },
   title: { ...type.title, color: palette.paper, marginTop: 10 },
 
   modeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 22 },

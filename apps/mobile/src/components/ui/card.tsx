@@ -4,7 +4,7 @@ import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Touchable } from '@/components/ui/touchable';
 import { palette, radius, shadowSoft, spacing } from '@/lib/theme';
 
-export type CardTone = 'panel' | 'mint' | 'amber' | 'red' | 'blue' | 'paper' | 'outline';
+export type CardTone = 'panel' | 'accent' | 'amber' | 'red' | 'blue' | 'paper' | 'outline';
 
 type CardProps = {
   children: ReactNode;
@@ -32,7 +32,7 @@ const styles = StyleSheet.create({
 
 const tones = StyleSheet.create({
   panel: { backgroundColor: palette.panel, borderColor: palette.line },
-  mint: { backgroundColor: palette.mintWash, borderColor: palette.mintLine },
+  accent: { backgroundColor: palette.citronWash, borderColor: palette.citronLine },
   amber: { backgroundColor: palette.amberWash, borderColor: palette.amberLine },
   red: { backgroundColor: palette.redWash, borderColor: palette.redLine },
   blue: { backgroundColor: palette.blueWash, borderColor: palette.blueLine },
@@ -42,7 +42,7 @@ const tones = StyleSheet.create({
 
 const hoverTones = StyleSheet.create({
   panel: { backgroundColor: palette.panelHover, borderColor: palette.lineBright },
-  mint: { borderColor: palette.mintDark },
+  accent: { borderColor: palette.citronDeep },
   amber: { borderColor: palette.amber },
   red: { borderColor: palette.red },
   blue: { borderColor: palette.blue },

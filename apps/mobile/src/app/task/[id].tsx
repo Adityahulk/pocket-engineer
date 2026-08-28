@@ -8,6 +8,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { Badge, LiveDot } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Icon } from '@/components/ui/icon';
 import { MissionProgress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Touchable } from '@/components/ui/touchable';
@@ -74,22 +75,26 @@ export default function TaskScreen() {
       </View>
       <Text style={styles.goal}>{data.goal}</Text>
       <View style={styles.metaRow}>
-        <Badge label={data.autonomy.toUpperCase()} tone={data.autonomy === 'autopilot' ? 'violet' : 'mint'} dot={false} />
-        <Badge label={data.mode.toUpperCase()} tone="neutral" dot={false} />
+        <Badge
+          label={data.autonomy.toUpperCase()}
+          tone={data.autonomy === 'autopilot' ? 'violet' : 'accent'}
+          icon={data.autonomy === 'autopilot' ? 'zap' : 'user-check'}
+        />
+        <Badge label={data.mode.toUpperCase()} tone="neutral" />
         {data.base_sha ? <Text style={styles.sha}>BASE {data.base_sha.slice(0, 12)}</Text> : null}
       </View>
 
       <Card style={styles.progressCard}><MissionProgress state={data.state} /></Card>
 
-      <Card tone="mint" style={styles.engineerCard}>
-        <Avatar name={data.engineer_name} size={38} tone="mint" />
+      <Card tone="accent" style={styles.engineerCard}>
+        <Avatar name={data.engineer_name} size={38} tone="accent" />
         <View style={styles.engineerCopy}>
           <Text style={styles.engineerLabel}>MISSION OWNER</Text>
           <Text style={styles.engineerName}>{data.engineer_name}</Text>
         </View>
         <Button
           label="CALL"
-          trailing="↗"
+          icon="mic"
           variant="light"
           size="sm"
           accessibilityLabel={`Call ${data.engineer_name} about this mission`}
@@ -107,7 +112,7 @@ export default function TaskScreen() {
           <Text style={styles.approvalText}>
             Only the reviewed patch will be used. The default branch is not modified. You can also tell {data.engineer_name} to ship it on a call.
           </Text>
-          <Button label="APPROVE PATCH" size="lg" full loading={approve.isPending} onPress={() => approve.mutate()} />
+          <Button label="APPROVE PATCH" icon="check" size="lg" full loading={approve.isPending} onPress={() => approve.mutate()} />
           <Touchable onPress={() => reject.mutate()} style={styles.rejectButton} accessibilityLabel="Reject patch">
             <Text style={styles.rejectText}>{reject.isPending ? 'REJECTING…' : 'REJECT AND SEND FEEDBACK'}</Text>
           </Touchable>
@@ -117,7 +122,8 @@ export default function TaskScreen() {
       {data.state === 'ready_for_review' && data.approval_status === 'approved' ? (
         <Button
           label="CREATE PULL REQUEST"
-          trailing="↗"
+          icon="git-pull-request"
+          trailingIcon="arrow-up-right"
           size="lg"
           full
           style={styles.standaloneButton}
@@ -177,7 +183,7 @@ export default function TaskScreen() {
                 accessibilityState={{ expanded: open }}
                 style={styles.checkRow}>
                 <View style={[styles.checkMark, !passed && styles.checkMarkFailed]}>
-                  <Text style={styles.checkMarkText}>{passed ? '✓' : '!'}</Text>
+                  <Icon name={passed ? 'check' : 'alert-triangle'} size={15} color={passed ? palette.citron : palette.red} />
                 </View>
                 <View style={styles.checkCopy}>
                   <Text style={styles.checkName}>{check.name}</Text>
@@ -204,7 +210,7 @@ export default function TaskScreen() {
                   accessibilityState={{ expanded: open }}
                   style={styles.fileHeader}
                   hoverStyle={styles.fileHeaderHover}>
-                  <Text style={styles.fileChevron}>{open ? '⌄' : '›'}</Text>
+                  <Icon name={open ? 'chevron-down' : 'chevron-right'} size={14} color={palette.muted} />
                   <Text style={styles.filePath} numberOfLines={1}>{file.path}</Text>
                   <Text style={styles.fileAdd}>+{file.additions}</Text>
                   <Text style={styles.fileDel}>−{file.deletions}</Text>
@@ -244,7 +250,7 @@ export default function TaskScreen() {
             <Text style={styles.prLabel}>PULL REQUEST{data.pull_request_state ? ` · ${data.pull_request_state.toUpperCase()}` : ''}</Text>
             <Text style={styles.prTitle}>Ready for team review</Text>
           </View>
-          <Text style={styles.prArrow}>↗</Text>
+          <Icon name="arrow-up-right" size={18} color={palette.blue} />
         </Card>
       ) : null}
 
@@ -253,7 +259,7 @@ export default function TaskScreen() {
       ) : null}
 
       {!terminal.has(data.state) ? (
-        <Button label="CANCEL MISSION" variant="ghost" size="sm" style={styles.cancelButton} onPress={() => cancel.mutate()} />
+        <Button label="CANCEL MISSION" icon="x-circle" variant="ghost" size="sm" style={styles.cancelButton} onPress={() => cancel.mutate()} />
       ) : null}
     </ScrollView>
   );
@@ -282,62 +288,63 @@ const styles = StyleSheet.create({
   progressCard: { marginTop: 22 },
   engineerCard: { flexDirection: 'row', alignItems: 'center', gap: 11, marginTop: 12 },
   engineerCopy: { flex: 1 },
-  engineerLabel: { ...type.label, color: palette.mintText, fontSize: 7 },
+  engineerLabel: { ...type.label, color: palette.citronText, fontSize: 7 },
   engineerName: { ...type.bodyStrong, color: palette.paper, fontSize: 14, marginTop: 3 },
 
   approvalCard: { marginTop: 22, padding: spacing.lg },
   approvalTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  approvalLabel: { ...type.label, color: palette.mintDark, flex: 1 },
-  approvalChecks: { ...type.label, color: palette.mintDark, fontSize: 8 },
+  approvalLabel: { ...type.label, color: palette.citronDeep, flex: 1 },
+  approvalChecks: { ...type.label, color: palette.citronDeep, fontSize: 8 },
   approvalTitle: { ...type.title, color: palette.ink, fontSize: 22, lineHeight: 28, marginTop: 10 },
-  approvalText: { ...type.body, color: '#536170', marginTop: 8, marginBottom: 20 },
+  approvalText: { ...type.body, color: '#4C5560', marginTop: 8, marginBottom: 20 },
   rejectButton: { alignItems: 'center', paddingTop: 16, paddingBottom: 4 },
   rejectText: { ...type.label, color: '#8A5A62', fontSize: 9 },
   standaloneButton: { marginTop: 22 },
 
   timeline: { marginTop: 22 },
-  eyebrow: { ...type.label, color: palette.mint },
+  eyebrow: { ...type.label, color: palette.citron },
   eyebrowRed: { color: palette.red },
   eventRow: { flexDirection: 'row', minHeight: 48, marginTop: 16 },
   eventRail: { width: 18, alignItems: 'center', paddingTop: 4 },
   eventDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: palette.mutedDeep },
-  eventDotActive: { backgroundColor: palette.mint },
+  eventDotActive: { backgroundColor: palette.citron },
   eventLine: { width: 1, flex: 1, marginTop: 5, backgroundColor: palette.lineBright },
   eventCopy: { flex: 1, paddingLeft: 11, paddingBottom: 10 },
-  eventMessage: { ...type.body, color: palette.paper, fontSize: 13, lineHeight: 19, fontWeight: '600' },
+  eventMessage: { ...type.bodyStrong, color: palette.paper, fontSize: 13, lineHeight: 19 },
   eventTime: { ...type.label, color: palette.mutedDeep, fontSize: 8, marginTop: 5 },
   working: {
     flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: palette.amberWash,
     borderRadius: radius.md, padding: 12, marginTop: 8,
   },
-  workingText: { ...type.caption, color: palette.amber, fontWeight: '700' },
+  workingText: { ...type.data, color: palette.amber },
 
   section: { marginTop: spacing.xl },
   sectionInner: { marginTop: 10 },
   sectionTitle: { ...type.heading, color: palette.paper, fontSize: 17, lineHeight: 24 },
-  body: { ...type.body, color: '#BBC5D1' },
+  body: { ...type.body, color: palette.muted },
   error: { ...type.body, color: palette.red },
 
   checkRow: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 9 },
-  checkMark: { width: 30, height: 30, borderRadius: radius.sm, backgroundColor: palette.mint, alignItems: 'center', justifyContent: 'center' },
-  checkMarkFailed: { backgroundColor: palette.red },
-  checkMarkText: { color: palette.ink, fontWeight: '900' },
+  checkMark: {
+    width: 30, height: 30, borderRadius: radius.sm, backgroundColor: palette.citronWash,
+    borderWidth: 1, borderColor: palette.citronLine, alignItems: 'center', justifyContent: 'center',
+  },
+  checkMarkFailed: { backgroundColor: palette.redWash, borderColor: palette.redLine },
   checkCopy: { marginLeft: 11, flex: 1 },
   checkName: { ...type.bodyStrong, color: palette.paper, fontSize: 13 },
   checkMeta: { ...type.label, color: palette.muted, fontSize: 8, marginTop: 4 },
-  log: { ...type.mono, color: '#B7C5D7', fontSize: 10, lineHeight: 15, marginTop: 9 },
+  log: { ...type.mono, color: palette.muted, fontSize: 10, lineHeight: 15, marginTop: 9 },
 
   fileBlock: { marginBottom: 8 },
   fileHeader: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 9, paddingHorizontal: 8, borderRadius: radius.sm },
   fileHeaderHover: { backgroundColor: palette.panelHover },
-  fileChevron: { color: palette.muted, fontSize: 13, width: 10 },
-  filePath: { ...type.caption, color: palette.paper, fontWeight: '700', flex: 1 },
-  fileAdd: { ...type.label, color: palette.mint, fontSize: 8 },
+  filePath: { ...type.data, color: palette.paper, flex: 1 },
+  fileAdd: { ...type.label, color: palette.citron, fontSize: 8 },
   fileDel: { ...type.label, color: palette.red, fontSize: 8 },
   diffScroll: { backgroundColor: palette.inkSunken, borderRadius: radius.md, maxHeight: 300 },
   diffContent: { padding: 12 },
-  diffLine: { ...type.mono, color: '#B7C5D7', fontSize: 10, lineHeight: 16 },
-  diffAdd: { color: palette.mint },
+  diffLine: { ...type.mono, color: palette.muted, fontSize: 10, lineHeight: 16 },
+  diffAdd: { color: palette.citron },
   diffDel: { color: palette.red },
   diffMeta: { color: palette.mutedDeep },
 
@@ -345,7 +352,6 @@ const styles = StyleSheet.create({
   prCopy: { flex: 1 },
   prLabel: { ...type.label, color: palette.blue, fontSize: 8 },
   prTitle: { ...type.heading, color: palette.paper, fontSize: 16, marginTop: 6 },
-  prArrow: { color: palette.blue, fontSize: 22 },
 
   cancelButton: { alignSelf: 'center', marginTop: 24 },
 });

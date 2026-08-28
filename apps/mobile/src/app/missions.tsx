@@ -21,7 +21,7 @@ export default function MissionsScreen() {
       style={styles.screen}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={missions.isFetching} onRefresh={() => missions.refetch()} tintColor={palette.mint} />}>
+      refreshControl={<RefreshControl refreshing={missions.isFetching} onRefresh={() => missions.refetch()} tintColor={palette.citron} />}>
       <ScreenIntro
         eyebrow="IN FLIGHT"
         eyebrowTone={palette.amber}
@@ -38,10 +38,10 @@ export default function MissionsScreen() {
           onPress={() => router.push({ pathname: '/task/[id]', params: { id: task.id } })}
           style={styles.card}>
           <View style={styles.top}>
-            <Badge label={task.autonomy.toUpperCase()} tone={task.autonomy === 'autopilot' ? 'violet' : 'mint'} dot={false} />
-            <Badge label={task.mode.toUpperCase()} tone="neutral" dot={false} />
+            <Badge label={task.autonomy.toUpperCase()} tone={task.autonomy === 'autopilot' ? 'violet' : 'accent'} icon={task.autonomy === 'autopilot' ? 'zap' : 'user-check'} />
+            <Badge label={task.mode.toUpperCase()} tone="neutral" />
             <View style={styles.spacer} />
-            <Avatar name={task.engineer_name} size={26} tone="mint" />
+            <Avatar name={task.engineer_name} size={26} tone="accent" />
           </View>
           <Text style={styles.goal} numberOfLines={3}>{task.goal}</Text>
           <MissionProgress state={task.state} />
@@ -50,11 +50,11 @@ export default function MissionsScreen() {
 
       {!loading && !missions.data?.length ? (
         <EmptyState
-          glyph="◉"
+          icon="activity"
           title="No missions in flight"
           body="Call Alex, describe the outcome you want, and the mission starts itself."
         >
-          <Button label="CALL ENGINEER" trailing="↗" onPress={() => router.push('/voice')} />
+          <Button label="CALL ENGINEER" icon="mic" onPress={() => router.push('/voice')} />
         </EmptyState>
       ) : null}
     </ScrollView>

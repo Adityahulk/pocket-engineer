@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 
+import { LogoLockup } from '@/components/brand/logo';
 import { clickable, palette, radius, shadow, spacing, type } from '@/lib/theme';
 import { ensureSupabase, getSupabase } from '@/lib/supabase';
 
@@ -56,7 +57,7 @@ export function AuthGate({ children }: PropsWithChildren) {
   }), [session]);
 
   if (loading) {
-    return <View style={styles.loading}><ActivityIndicator size="large" color={palette.mint} /></View>;
+    return <View style={styles.loading}><ActivityIndicator size="large" color={palette.citron} /></View>;
   }
   if (configured && !session) return <SignIn />;
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -83,13 +84,7 @@ function SignIn() {
     <KeyboardAvoidingView style={styles.page} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.glow} />
       <View style={styles.card}>
-        <View style={styles.brandRow}>
-          <View style={styles.brandMark}><Text style={styles.brandGlyph}>PE</Text></View>
-          <View>
-            <Text style={styles.brandName}>Pocket Engineer</Text>
-            <Text style={styles.eyebrow}>PRIVATE MISSION CONTROL</Text>
-          </View>
-        </View>
+        <LogoLockup size={44} caption="PRIVATE MISSION CONTROL" />
         <Text style={styles.title}>Welcome back.</Text>
         <Text style={styles.subtitle}>Sign in to manage your software and AI engineers.</Text>
         <View style={styles.form}>
@@ -148,16 +143,11 @@ function SignIn() {
 const styles = StyleSheet.create({
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.ink },
   page: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.lg, backgroundColor: palette.ink, overflow: 'hidden' },
-  glow: { position: 'absolute', width: 460, height: 460, borderRadius: 230, backgroundColor: '#123D51', opacity: 0.22, top: -200 },
+  glow: { position: 'absolute', width: 460, height: 460, borderRadius: 230, backgroundColor: '#2A3D0C', opacity: 0.16, top: -200 },
   card: {
     width: '100%', maxWidth: 430, backgroundColor: palette.panel, borderColor: palette.line,
     borderWidth: 1, borderRadius: radius.xl, padding: spacing.lg, ...shadow,
   },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  brandMark: { width: 46, height: 46, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.mint },
-  brandGlyph: { color: palette.ink, fontSize: 15, fontWeight: '900', letterSpacing: -0.8 },
-  brandName: { color: palette.paper, fontSize: 15, fontWeight: '900' },
-  eyebrow: { ...type.label, color: palette.mint, fontSize: 8, marginTop: 4 },
   title: { ...type.display, color: palette.paper, fontSize: 33, lineHeight: 38, marginTop: spacing.lg },
   subtitle: { ...type.body, color: palette.muted, marginTop: 9 },
   form: { gap: 14, marginTop: spacing.lg },
@@ -171,11 +161,11 @@ const styles = StyleSheet.create({
   error: { ...type.caption, color: palette.red },
   button: {
     minHeight: 52, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: palette.mint, marginTop: 4,
+    backgroundColor: palette.citron, marginTop: 4,
   },
   buttonPressed: { opacity: 0.72 },
   buttonDisabled: { opacity: 0.4 },
-  buttonText: { color: palette.ink, fontSize: 15, fontWeight: '900' },
+  buttonText: { ...type.label, color: palette.ink, fontSize: 11 },
   help: { ...type.caption, color: palette.mutedDeep, textAlign: 'center', marginTop: spacing.lg },
-  loopFooter: { ...type.label, color: palette.line, marginTop: spacing.xl },
+  loopFooter: { ...type.label, color: '#3C4149', marginTop: spacing.xl },
 });

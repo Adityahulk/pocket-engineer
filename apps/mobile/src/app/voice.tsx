@@ -5,9 +5,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { LogoMark } from '@/components/brand/logo';
 import { Badge, LiveDot } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Icon } from '@/components/ui/icon';
 import { Touchable } from '@/components/ui/touchable';
 import { api } from '@/lib/api';
 import { glow, palette, radius, spacing, type } from '@/lib/theme';
@@ -20,7 +22,7 @@ const statusCopy: Record<CallStatus, string> = {
 };
 
 const statusColor: Record<CallStatus, string> = {
-  idle: palette.muted, connecting: palette.amber, listening: palette.mint, thinking: palette.amber,
+  idle: palette.muted, connecting: palette.amber, listening: palette.citron, thinking: palette.amber,
   speaking: palette.blue, ended: palette.muted, error: palette.red,
 };
 
@@ -141,7 +143,7 @@ export default function VoiceCallScreen() {
     <SafeAreaView style={styles.safe}>
       <View style={styles.topBar}>
         <Text style={styles.callLabel}>ENGINEER CALL</Text>
-        <Badge label="PRIVATE SESSION" tone="mint" />
+        <Badge label="PRIVATE SESSION" tone="accent" icon="lock" />
       </View>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <Animated.View
@@ -151,7 +153,7 @@ export default function VoiceCallScreen() {
             live && styles.avatarHaloLive,
           ]}>
           <View style={styles.avatarRing}>
-            <View style={styles.avatar}><Text style={styles.avatarText}>PE</Text></View>
+            <LogoMark size={94} style={styles.avatar} />
           </View>
         </Animated.View>
 
@@ -209,7 +211,7 @@ export default function VoiceCallScreen() {
               <Button label="EDIT LATER" variant="ghost" style={styles.draftSecondary} onPress={() => setDraft(null)} />
               <Button
                 label="START MISSION"
-                trailing="↗"
+                trailingIcon="arrow-up-right"
                 style={styles.draftPrimary}
                 loading={startMission.isPending}
                 onPress={() => startMission.mutate(draft)}
@@ -226,7 +228,7 @@ export default function VoiceCallScreen() {
           accessibilityState={{ selected: muted }}
           style={[styles.control, muted && styles.controlActive]}
           hoverStyle={styles.controlHover}>
-          <Text style={[styles.controlIcon, muted && styles.controlIconActive]}>{muted ? '×' : '◦'}</Text>
+          <Icon name={muted ? 'mic-off' : 'mic'} size={19} color={muted ? palette.ink : palette.paper} />
           <Text style={[styles.controlText, muted && styles.controlIconActive]}>{muted ? 'UNMUTE' : 'MUTE'}</Text>
         </Touchable>
 
@@ -236,8 +238,8 @@ export default function VoiceCallScreen() {
             accessibilityLabel="Interrupt the engineer"
             style={[styles.control, styles.interrupt]}
             hoverStyle={styles.controlHover}>
-            <Text style={styles.controlIcon}>Ⅱ</Text>
-            <Text style={styles.controlText}>INTERRUPT</Text>
+            <Icon name="pause" size={18} color={palette.amber} />
+            <Text style={[styles.controlText, { color: palette.amber }]}>INTERRUPT</Text>
           </Touchable>
         ) : (
           <View style={styles.wave}>
@@ -255,7 +257,7 @@ export default function VoiceCallScreen() {
         )}
 
         <Touchable onPress={endCall} accessibilityLabel="End call" style={[styles.control, styles.end]} hoverStyle={styles.endHover}>
-          <Text style={styles.endIcon}>⌁</Text>
+          <Icon name="phone-off" size={19} color="#FFF" />
           <Text style={styles.endText}>END</Text>
         </Touchable>
       </View>
@@ -266,7 +268,7 @@ export default function VoiceCallScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: palette.inkSunken, overflow: 'hidden' },
   safe: { flex: 1 },
-  glow: { position: 'absolute', alignSelf: 'center', backgroundColor: '#123D51', opacity: 0.1 },
+  glow: { position: 'absolute', alignSelf: 'center', backgroundColor: '#2A3D0C', opacity: 0.11 },
   glowOuter: { top: -250, width: 640, height: 640, borderRadius: 320 },
   glowMid: { top: -155, width: 450, height: 450, borderRadius: 225 },
   glowInner: { top: -70, width: 285, height: 285, borderRadius: 143 },
@@ -275,29 +277,25 @@ const styles = StyleSheet.create({
   callLabel: { ...type.label, color: palette.paper, flex: 1 },
 
   content: { alignItems: 'center', paddingHorizontal: spacing.lg, paddingBottom: 160, maxWidth: 680, width: '100%', alignSelf: 'center' },
-  avatarHalo: { marginTop: 26, width: 132, height: 132, borderRadius: 66, backgroundColor: '#0F2C34', alignItems: 'center', justifyContent: 'center' },
-  avatarHaloLive: { backgroundColor: '#15414A' },
-  avatarRing: { width: 112, height: 112, borderRadius: 56, borderWidth: 1, borderColor: palette.mintLine, alignItems: 'center', justifyContent: 'center' },
-  avatar: {
-    width: 94, height: 94, borderRadius: 47, backgroundColor: palette.mint,
-    alignItems: 'center', justifyContent: 'center', ...glow('#0C6B52'),
-  },
-  avatarText: { color: palette.ink, fontSize: 26, fontWeight: '900', letterSpacing: -1 },
+  avatarHalo: { marginTop: 26, width: 132, height: 132, borderRadius: 66, backgroundColor: palette.citronWash, alignItems: 'center', justifyContent: 'center' },
+  avatarHaloLive: { backgroundColor: '#202B0C' },
+  avatarRing: { width: 112, height: 112, borderRadius: 56, borderWidth: 1, borderColor: palette.citronLine, alignItems: 'center', justifyContent: 'center' },
+  avatar: { borderRadius: 47, ...glow('#5C7A0F') },
 
   name: { ...type.title, color: palette.paper, fontSize: 25, marginTop: 22 },
-  role: { ...type.label, color: palette.mintText, fontSize: 8, marginTop: 7 },
+  role: { ...type.label, color: palette.citronText, fontSize: 8, marginTop: 7 },
   context: { ...type.caption, color: palette.muted, marginTop: 10 },
   statusRow: {
     flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 16, borderWidth: 1,
     borderColor: palette.line, borderRadius: radius.pill, paddingHorizontal: 13, paddingVertical: 8,
   },
-  status: { ...type.caption, color: palette.paper, fontWeight: '700' },
+  status: { ...type.data, color: palette.paper },
 
   transcriptCard: { width: '100%', marginTop: 28 },
-  transcriptLabel: { ...type.label, color: palette.mint, marginBottom: 4 },
+  transcriptLabel: { ...type.label, color: palette.citron, marginBottom: 4 },
   turn: { paddingTop: 13 },
   turnRole: { ...type.label, color: palette.blue, fontSize: 8 },
-  engineerRole: { color: palette.mint },
+  engineerRole: { color: palette.citron },
   turnText: { ...type.body, color: palette.paper, marginTop: 5 },
 
   talkRow: { width: '100%', flexDirection: 'row', gap: 8, marginTop: 20 },
@@ -308,29 +306,27 @@ const styles = StyleSheet.create({
   error: { ...type.body, color: palette.red, textAlign: 'center', marginTop: 20 },
 
   draftCard: { width: '100%', marginTop: 24 },
-  draftLabel: { ...type.label, color: palette.mintDark },
+  draftLabel: { ...type.label, color: palette.citronDeep },
   draftTitle: { ...type.heading, color: palette.ink, fontSize: 18, lineHeight: 25, marginTop: 10 },
-  draftMeta: { ...type.caption, color: '#607080', fontSize: 11, marginTop: 8 },
+  draftMeta: { ...type.caption, color: '#4C5560', fontSize: 11, marginTop: 8 },
   draftActions: { flexDirection: 'row', gap: 9, marginTop: 18 },
   draftSecondary: { flex: 1 },
   draftPrimary: { flex: 1.4 },
 
   controls: {
     position: 'absolute', bottom: 0, left: 0, right: 0, minHeight: 118, paddingHorizontal: 28,
-    paddingTop: 16, paddingBottom: 26, backgroundColor: '#050A12EE', borderTopWidth: 1,
+    paddingTop: 16, paddingBottom: 26, backgroundColor: '#040507EE', borderTopWidth: 1,
     borderTopColor: palette.line, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around',
   },
   control: { width: 66, height: 66, borderRadius: 33, backgroundColor: palette.panelRaised, alignItems: 'center', justifyContent: 'center' },
   controlHover: { backgroundColor: palette.panelHover },
   controlActive: { backgroundColor: palette.amber },
   interrupt: { backgroundColor: palette.amberWash, borderWidth: 1, borderColor: palette.amberLine },
-  controlIcon: { color: palette.paper, fontSize: 18, fontWeight: '900' },
   controlIconActive: { color: palette.ink },
-  controlText: { color: palette.paper, fontSize: 7, fontWeight: '900', letterSpacing: 0.8, marginTop: 3 },
-  end: { backgroundColor: '#E24B5A' },
-  endHover: { backgroundColor: '#F05C6B' },
-  endIcon: { color: '#FFF', fontSize: 23, fontWeight: '900', transform: [{ rotate: '135deg' }] },
-  endText: { color: '#FFF', fontSize: 7, fontWeight: '900', letterSpacing: 1, marginTop: 2 },
-  wave: { width: 66, height: 66, borderRadius: 33, backgroundColor: palette.mintWash, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3 },
-  waveBar: { width: 3, borderRadius: 2, backgroundColor: palette.mint },
+  controlText: { ...type.label, color: palette.paper, fontSize: 7, letterSpacing: 0.4, marginTop: 4 },
+  end: { backgroundColor: '#D8434F' },
+  endHover: { backgroundColor: '#E9525E' },
+  endText: { ...type.label, color: '#FFF', fontSize: 7, letterSpacing: 0.4, marginTop: 4 },
+  wave: { width: 66, height: 66, borderRadius: 33, backgroundColor: palette.citronWash, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3 },
+  waveBar: { width: 3, borderRadius: 2, backgroundColor: palette.citron },
 });

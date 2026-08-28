@@ -7,6 +7,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Icon } from '@/components/ui/icon';
 import { EmptyState, ScreenIntro } from '@/components/ui/section';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { api } from '@/lib/api';
@@ -21,7 +22,7 @@ export default function DecisionsScreen() {
       style={styles.screen}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={decisions.isFetching} onRefresh={() => decisions.refetch()} tintColor={palette.mint} />}>
+      refreshControl={<RefreshControl refreshing={decisions.isFetching} onRefresh={() => decisions.refetch()} tintColor={palette.citron} />}>
       <ScreenIntro
         eyebrow="HUMAN GATE"
         title="Decisions"
@@ -37,27 +38,28 @@ export default function DecisionsScreen() {
           onPress={() => router.push({ pathname: '/task/[id]', params: { id: task.id } })}
           style={styles.card}>
           <View style={styles.top}>
-            <Badge label={task.mode.toUpperCase()} tone="amber" dot={false} />
-            {task.priority !== 'normal' ? <Badge label={task.priority.toUpperCase()} tone="red" dot={false} /> : null}
+            <Badge label={task.mode.toUpperCase()} tone="amber" />
+            {task.priority !== 'normal' ? <Badge label={task.priority.toUpperCase()} tone="red" icon="alert-circle" /> : null}
             <View style={styles.spacer} />
             <StatePill state={task.state} />
           </View>
           <Text style={styles.goal}>{task.goal}</Text>
           <View style={styles.footer}>
-            <Avatar name={task.engineer_name} size={26} tone="mint" />
+            <Avatar name={task.engineer_name} size={26} tone="accent" />
             <Text style={styles.owner}>{task.engineer_name}</Text>
-            <Text style={styles.review}>REVIEW PATCH ›</Text>
+            <Text style={styles.review}>REVIEW PATCH</Text>
+            <Icon name="chevron-right" size={14} color={palette.citron} />
           </View>
         </Card>
       ))}
 
       {!loading && !decisions.data?.length ? (
         <EmptyState
-          glyph="✓"
+          icon="check-circle"
           title="Nothing waiting on you"
           body="Alex will ping you the moment a patch passes verification and needs a human decision."
         >
-          <Button label="SEE ACTIVE MISSIONS" variant="secondary" trailing="›" onPress={() => router.push('/missions')} />
+          <Button label="SEE ACTIVE MISSIONS" variant="secondary" trailingIcon="chevron-right" onPress={() => router.push('/missions')} />
         </EmptyState>
       ) : null}
     </ScrollView>
@@ -73,5 +75,5 @@ const styles = StyleSheet.create({
   goal: { ...type.heading, color: palette.paper, fontSize: 17, lineHeight: 24, marginTop: 14 },
   footer: { flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 16 },
   owner: { ...type.caption, color: palette.muted, flex: 1 },
-  review: { ...type.label, color: palette.mint, fontSize: 8 },
+  review: { ...type.label, color: palette.citron, fontSize: 8 },
 });
