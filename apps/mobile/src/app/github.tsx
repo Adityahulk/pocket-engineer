@@ -5,7 +5,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Icon } from '@/components/ui/icon';
-import { EmptyState, ScreenIntro } from '@/components/ui/section';
+import { EmptyState, ErrorState, ScreenIntro } from '@/components/ui/section';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { api } from '@/lib/api';
 import { layout, palette, radius, spacing, type } from '@/lib/theme';
@@ -50,7 +50,13 @@ export default function GitHubRepositoryScreen() {
       />
 
       {repositories.isLoading ? <><SkeletonCard lines={1} /><SkeletonCard lines={1} /></> : null}
-      {repositories.isError ? <Text style={styles.error}>{repositories.error.message}</Text> : null}
+      {repositories.isError ? (
+        <ErrorState
+          title="Could not list repositories"
+          error={repositories.error}
+          onRetry={() => void repositories.refetch()}
+        />
+      ) : null}
 
       {repositories.data?.map((repository) => (
         <Card
@@ -72,7 +78,7 @@ export default function GitHubRepositoryScreen() {
         </Card>
       ))}
 
-      {!repositories.isLoading && repositories.data?.length === 0 ? (
+      {!repositories.isLoading && !repositories.isError && repositories.data?.length === 0 ? (
         <EmptyState
           icon="folder"
           title="No repositories shared"

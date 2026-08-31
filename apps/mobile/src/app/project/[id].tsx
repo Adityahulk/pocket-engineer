@@ -9,10 +9,11 @@ import { Badge, LiveDot } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { MissionProgress } from '@/components/ui/progress';
-import { Divider, SectionHeader } from '@/components/ui/section';
+import { Divider, ErrorState, SectionHeader } from '@/components/ui/section';
 import { Skeleton, SkeletonCard } from '@/components/ui/skeleton';
 import { Touchable } from '@/components/ui/touchable';
 import { api } from '@/lib/api';
+import { useLiveInterval } from '@/lib/live';
 import { layout, palette, radius, spacing, type } from '@/lib/theme';
 
 export default function ProjectScreen() {
@@ -22,7 +23,7 @@ export default function ProjectScreen() {
   const [mode, setMode] = useState<'fix' | 'modify'>('fix');
   const [autopilot, setAutopilot] = useState(false);
   const project = useQuery({ queryKey: ['project', id], queryFn: () => api.project(id!) });
-  const tasks = useQuery({ queryKey: ['tasks', id], queryFn: () => api.tasks(id!), refetchInterval: 2_000 });
+  const tasks = useQuery({ queryKey: ['tasks', id], queryFn: () => api.tasks(id!), refetchInterval: useLiveInterval(2_000) });
   const composedGoal = goal ?? (project.data?.is_demo
     ? 'Checkout returns 500 for customers without a discount. Find the root cause and fix it.'
     : '');
@@ -35,6 +36,14 @@ export default function ProjectScreen() {
   });
   const tooShort = composedGoal.trim().length < 3;
   const incident = project.data?.health_status === 'incident';
+
+  if (project.isError && !project.data) {
+    return (
+      <View style={styles.centered}>
+        <ErrorState title="Could not load this project" error={project.error} onRetry={() => void project.refetch()} />
+      </View>
+    );
+  }
 
   return (
     <ScrollView
@@ -145,7 +154,10 @@ export default function ProjectScreen() {
           <Text style={styles.taskDate}>{new Date(task.created_at).toLocaleString()}</Text>
         </Card>
       ))}
-      {!tasks.isLoading && tasks.data?.length === 0 ? (
+      {tasks.isError && !tasks.data ? (
+        <ErrorState title="Could not load missions" error={tasks.error} onRetry={() => void tasks.refetch()} />
+      ) : null}
+      {!tasks.isLoading && !tasks.isError && tasks.data?.length === 0 ? (
         <Text style={styles.noTasks}>No missions yet. Your first verified outcome starts here.</Text>
       ) : null}
     </ScrollView>
@@ -169,6 +181,7 @@ function Chip({ label, active, onPress, tone = 'paper' }: {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: palette.ink },
+  centered: { flex: 1, backgroundColor: palette.ink, justifyContent: 'center', padding: spacing.lg },
   content: { padding: spacing.lg, paddingBottom: 80, maxWidth: layout.narrowWidth, width: '100%', alignSelf: 'center' },
 
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },

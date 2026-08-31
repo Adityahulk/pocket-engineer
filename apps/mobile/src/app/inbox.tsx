@@ -8,13 +8,15 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Icon } from '@/components/ui/icon';
-import { EmptyState, ScreenIntro } from '@/components/ui/section';
+import { EmptyState, ErrorState, ScreenIntro } from '@/components/ui/section';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { api } from '@/lib/api';
+import { useLiveInterval, usePullToRefresh } from '@/lib/live';
 import { layout, palette, spacing, type } from '@/lib/theme';
 
 export default function DecisionsScreen() {
-  const decisions = useQuery({ queryKey: ['decisions'], queryFn: api.decisions, refetchInterval: 4_000 });
+  const decisions = useQuery({ queryKey: ['decisions'], queryFn: api.decisions, refetchInterval: useLiveInterval(4_000) });
+  const pull = usePullToRefresh(decisions.refetch);
   const loading = decisions.isLoading && !decisions.data;
 
   return (
@@ -22,7 +24,7 @@ export default function DecisionsScreen() {
       style={styles.screen}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={decisions.isFetching} onRefresh={() => decisions.refetch()} tintColor={palette.citron} />}>
+      refreshControl={<RefreshControl refreshing={pull.refreshing} onRefresh={pull.onRefresh} tintColor={palette.citron} />}>
       <ScreenIntro
         eyebrow="HUMAN GATE"
         title="Decisions"
@@ -53,7 +55,11 @@ export default function DecisionsScreen() {
         </Card>
       ))}
 
-      {!loading && !decisions.data?.length ? (
+      {decisions.isError && !decisions.data ? (
+        <ErrorState title="Could not load decisions" error={decisions.error} onRetry={pull.onRefresh} />
+      ) : null}
+
+      {!loading && !decisions.isError && !decisions.data?.length ? (
         <EmptyState
           icon="check-circle"
           title="Nothing waiting on you"

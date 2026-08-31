@@ -17,13 +17,15 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Touchable } from '@/components/ui/touchable';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { useLiveInterval, usePullToRefresh } from '@/lib/live';
 import { registerPushNotifications } from '@/lib/notifications';
 import { fonts, glow, layout, palette, radius, spacing, type } from '@/lib/theme';
 
 export default function CommandCenterScreen() {
   const auth = useAuth();
-  const center = useQuery({ queryKey: ['command-center'], queryFn: api.commandCenter, refetchInterval: 4_000 });
+  const center = useQuery({ queryKey: ['command-center'], queryFn: api.commandCenter, refetchInterval: useLiveInterval(4_000) });
   const github = useQuery({ queryKey: ['github-config'], queryFn: api.githubConfig });
+  const pull = usePullToRefresh(center.refetch);
   const primaryProject = center.data?.projects.find((project) => project.health_status === 'incident') ?? center.data?.projects[0];
   const hour = new Date().getHours();
   const hello = hour < 12 ? 'Good morning.' : hour < 18 ? 'Good afternoon.' : 'Good evening.';
@@ -55,7 +57,7 @@ export default function CommandCenterScreen() {
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={center.isFetching} onRefresh={() => center.refetch()} tintColor={palette.citron} />}>
+        refreshControl={<RefreshControl refreshing={pull.refreshing} onRefresh={pull.onRefresh} tintColor={palette.citron} />}>
         <View style={styles.brandRow}>
           <LogoLockup size={34} />
           <View style={styles.brandSpacer} />
@@ -163,7 +165,8 @@ export default function CommandCenterScreen() {
         {center.isError && (
           <Card tone="red" style={styles.errorCard}>
             <Text style={styles.errorTitle}>Mission Control is offline</Text>
-            <Text style={styles.errorText}>Start the API, then pull down to retry.{`\n`}{api.baseUrl}</Text>
+            <Text style={styles.errorText}>{center.error.message}{`\n`}{api.baseUrl}</Text>
+            <Button label="TRY AGAIN" icon="refresh-cw" variant="secondary" size="sm" style={styles.errorRetry} onPress={pull.onRefresh} />
           </Card>
         )}
         {loading && !center.isError ? (
@@ -335,6 +338,7 @@ const styles = StyleSheet.create({
   errorCard: { marginBottom: 12 },
   errorTitle: { ...type.bodyStrong, color: palette.red },
   errorText: { ...type.caption, color: palette.redText, marginTop: 6 },
+  errorRetry: { alignSelf: 'flex-start', marginTop: 14 },
 
   footerRule: { marginTop: spacing.xl },
   footer: { ...type.label, color: '#3C4149', textAlign: 'center', marginTop: 18, fontSize: 9 },

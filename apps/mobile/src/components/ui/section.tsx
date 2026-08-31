@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
+import { Button } from '@/components/ui/button';
 import { Icon, type IconName } from '@/components/ui/icon';
 import { Touchable } from '@/components/ui/touchable';
 import { palette, radius, spacing, type } from '@/lib/theme';
@@ -42,19 +43,39 @@ export function ScreenIntro({ eyebrow, eyebrowTone = palette.citron, title, body
   );
 }
 
-export function EmptyState({ icon, title, body, children }: {
+export function EmptyState({ icon, title, body, tone = 'accent', children }: {
   icon: IconName;
   title: string;
   body: string;
+  tone?: 'accent' | 'red';
   children?: ReactNode;
 }) {
+  const red = tone === 'red';
   return (
     <View style={styles.empty}>
-      <View style={styles.emptyGlyph}><Icon name={icon} size={20} color={palette.citron} /></View>
+      <View style={[styles.emptyGlyph, red && styles.emptyGlyphRed]}>
+        <Icon name={icon} size={20} color={red ? palette.red : palette.citron} />
+      </View>
       <Text style={styles.emptyTitle}>{title}</Text>
       <Text style={styles.emptyBody}>{body}</Text>
       {children ? <View style={styles.emptyAction}>{children}</View> : null}
     </View>
+  );
+}
+
+/**
+ * Failure needs its own state. Falling through to `EmptyState` tells the user
+ * there is no work waiting when the truth is that we could not ask.
+ */
+export function ErrorState({ title, error, onRetry }: { title: string; error: unknown; onRetry: () => void }) {
+  return (
+    <EmptyState
+      icon="alert-triangle"
+      tone="red"
+      title={title}
+      body={error instanceof Error ? error.message : 'Mission Control could not reach the API.'}>
+      <Button label="TRY AGAIN" icon="refresh-cw" variant="secondary" onPress={onRetry} />
+    </EmptyState>
   );
 }
 
@@ -82,6 +103,7 @@ const styles = StyleSheet.create({
     width: 48, height: 48, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center',
     backgroundColor: palette.citronWash, borderWidth: 1, borderColor: palette.citronLine,
   },
+  emptyGlyphRed: { backgroundColor: palette.redWash, borderColor: palette.redLine },
   emptyTitle: { ...type.heading, color: palette.paper, marginTop: 16, textAlign: 'center' },
   emptyBody: { ...type.body, color: palette.muted, marginTop: 8, textAlign: 'center', maxWidth: 340 },
   emptyAction: { marginTop: 20 },

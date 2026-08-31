@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useIsFocused, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,6 +13,7 @@ import { Card } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm';
 import { Icon } from '@/components/ui/icon';
 import { MissionProgress } from '@/components/ui/progress';
+import { ErrorState } from '@/components/ui/section';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Touchable } from '@/components/ui/touchable';
 import { api, streamTaskEvents } from '@/lib/api';
@@ -27,6 +28,7 @@ export default function TaskScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
+  const focused = useIsFocused();
   const [openCheck, setOpenCheck] = useState<string | null>(null);
   /** `undefined` means the reviewer has not touched the patch list yet. */
   const [openFile, setOpenFile] = useState<string | null | undefined>(undefined);
@@ -53,7 +55,7 @@ export default function TaskScreen() {
   const files = useMemo(() => parseUnifiedDiff(data?.diff ?? ''), [data?.diff]);
 
   useEffect(() => {
-    if (!id || terminal.has(data?.state ?? '')) return;
+    if (!id || !focused || terminal.has(data?.state ?? '')) return;
     const controller = new AbortController();
     let poll: ReturnType<typeof setInterval> | undefined;
     streamTaskEvents(id, 0, () => { void refresh(); }, controller.signal).catch(() => {
@@ -63,14 +65,23 @@ export default function TaskScreen() {
       controller.abort();
       if (poll) clearInterval(poll);
     };
-  }, [id, data?.state, refresh]);
+  }, [id, focused, data?.state, refresh]);
 
   function confirm(next: Dialog) {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setDialog(next);
   }
 
-  if (task.isLoading || !data) {
+  if (!data) {
+    // Retries can be exhausted while `data` is still undefined, so an error
+    // has to win here or the screen shows a skeleton that never resolves.
+    if (task.isError) {
+      return (
+        <View style={styles.centered}>
+          <ErrorState title="Could not load this mission" error={task.error} onRetry={() => void task.refetch()} />
+        </View>
+      );
+    }
     return (
       <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
         <Skeleton width={140} height={11} />
@@ -359,6 +370,7 @@ function Section({ label, children, tone = 'panel' }: { label: string; children:
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: palette.ink },
+  centered: { flex: 1, backgroundColor: palette.ink, justifyContent: 'center', padding: spacing.lg },
   content: { padding: spacing.lg, paddingBottom: 80, maxWidth: layout.maxWidth, width: '100%', alignSelf: 'center' },
   loadingBlock: { gap: 10, marginTop: 22 },
 

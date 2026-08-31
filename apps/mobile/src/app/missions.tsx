@@ -7,13 +7,15 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { MissionProgress } from '@/components/ui/progress';
-import { EmptyState, ScreenIntro } from '@/components/ui/section';
+import { EmptyState, ErrorState, ScreenIntro } from '@/components/ui/section';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { api } from '@/lib/api';
+import { useLiveInterval, usePullToRefresh } from '@/lib/live';
 import { layout, palette, spacing, type } from '@/lib/theme';
 
 export default function MissionsScreen() {
-  const missions = useQuery({ queryKey: ['missions'], queryFn: api.missions, refetchInterval: 3_000 });
+  const missions = useQuery({ queryKey: ['missions'], queryFn: api.missions, refetchInterval: useLiveInterval(3_000) });
+  const pull = usePullToRefresh(missions.refetch);
   const loading = missions.isLoading && !missions.data;
 
   return (
@@ -21,7 +23,7 @@ export default function MissionsScreen() {
       style={styles.screen}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={missions.isFetching} onRefresh={() => missions.refetch()} tintColor={palette.citron} />}>
+      refreshControl={<RefreshControl refreshing={pull.refreshing} onRefresh={pull.onRefresh} tintColor={palette.citron} />}>
       <ScreenIntro
         eyebrow="IN FLIGHT"
         eyebrowTone={palette.amber}
@@ -48,7 +50,11 @@ export default function MissionsScreen() {
         </Card>
       ))}
 
-      {!loading && !missions.data?.length ? (
+      {missions.isError && !missions.data ? (
+        <ErrorState title="Could not load missions" error={missions.error} onRetry={pull.onRefresh} />
+      ) : null}
+
+      {!loading && !missions.isError && !missions.data?.length ? (
         <EmptyState
           icon="activity"
           title="No missions in flight"
