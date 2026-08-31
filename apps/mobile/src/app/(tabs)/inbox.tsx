@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { StatePill } from '@/components/state-pill';
 import { Avatar } from '@/components/ui/avatar';
@@ -15,6 +16,7 @@ import { useLiveInterval, usePullToRefresh } from '@/lib/live';
 import { layout, palette, spacing, type } from '@/lib/theme';
 
 export default function DecisionsScreen() {
+  const insets = useSafeAreaInsets();
   const decisions = useQuery({ queryKey: ['decisions'], queryFn: api.decisions, refetchInterval: useLiveInterval(4_000) });
   const pull = usePullToRefresh(decisions.refetch);
   const loading = decisions.isLoading && !decisions.data;
@@ -22,7 +24,7 @@ export default function DecisionsScreen() {
   return (
     <ScrollView
       style={styles.screen}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}
       showsVerticalScrollIndicator={false}
       refreshControl={<RefreshControl refreshing={pull.refreshing} onRefresh={pull.onRefresh} tintColor={palette.citron} />}>
       <ScreenIntro
@@ -65,7 +67,7 @@ export default function DecisionsScreen() {
           title="Nothing waiting on you"
           body="Alex will ping you the moment a patch passes verification and needs a human decision."
         >
-          <Button label="SEE ACTIVE MISSIONS" variant="secondary" trailingIcon="chevron-right" onPress={() => router.push('/missions')} />
+          <Button label="SEE ACTIVE MISSIONS" variant="secondary" trailingIcon="chevron-right" onPress={() => router.navigate('/missions')} />
         </EmptyState>
       ) : null}
     </ScrollView>

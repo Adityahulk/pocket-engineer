@@ -34,9 +34,7 @@ export default function RootLayout() {
             headerTitleStyle: { fontFamily: fonts.display, fontSize: 16 },
             headerBackButtonDisplayMode: 'minimal',
           }}>
-            <Stack.Screen name="index" options={{ headerShown: false }} />
-            <Stack.Screen name="inbox" options={{ title: 'Decisions' }} />
-            <Stack.Screen name="missions" options={{ title: 'Active missions' }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="project/[id]" options={{ title: 'Project' }} />
             <Stack.Screen name="task/[id]" options={{ title: 'Mission' }} />
             <Stack.Screen name="github" options={{ title: 'Choose repository' }} />

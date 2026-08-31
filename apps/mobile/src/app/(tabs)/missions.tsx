@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +15,7 @@ import { useLiveInterval, usePullToRefresh } from '@/lib/live';
 import { layout, palette, spacing, type } from '@/lib/theme';
 
 export default function MissionsScreen() {
+  const insets = useSafeAreaInsets();
   const missions = useQuery({ queryKey: ['missions'], queryFn: api.missions, refetchInterval: useLiveInterval(3_000) });
   const pull = usePullToRefresh(missions.refetch);
   const loading = missions.isLoading && !missions.data;
@@ -21,7 +23,7 @@ export default function MissionsScreen() {
   return (
     <ScrollView
       style={styles.screen}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}
       showsVerticalScrollIndicator={false}
       refreshControl={<RefreshControl refreshing={pull.refreshing} onRefresh={pull.onRefresh} tintColor={palette.citron} />}>
       <ScreenIntro

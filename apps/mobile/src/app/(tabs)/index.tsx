@@ -97,8 +97,8 @@ export default function CommandCenterScreen() {
             loading={loading}
             onPress={() => primaryProject && router.push({ pathname: '/project/[id]', params: { id: primaryProject.id } })}
           />
-          <Metric value={center.data?.active_missions ?? 0} label="MISSIONS" color={palette.amber} loading={loading} onPress={() => router.push('/missions')} />
-          <Metric value={center.data?.approval_count ?? 0} label="DECISIONS" color={palette.blue} loading={loading} last onPress={() => router.push('/inbox')} />
+          <Metric value={center.data?.active_missions ?? 0} label="MISSIONS" color={palette.amber} loading={loading} onPress={() => router.navigate('/missions')} />
+          <Metric value={center.data?.approval_count ?? 0} label="DECISIONS" color={palette.blue} loading={loading} last onPress={() => router.navigate('/inbox')} />
         </View>
 
         {center.data?.incident_count ? (
