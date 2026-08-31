@@ -5,21 +5,26 @@ import { MISSION_STAGES, MISSION_STOPPED, missionStage, missionStageLabel } from
 import { palette, radius, type } from '@/lib/theme';
 
 /** Segmented view of where a mission is in the observe → verify → review loop. */
-export function MissionProgress({ state, compact = false }: { state: string; compact?: boolean }) {
+export function MissionProgress({ state }: { state: string }) {
   const stage = missionStage(state);
   const stopped = MISSION_STOPPED.has(state);
   const done = state === 'completed';
   const accent = stopped ? palette.red : done ? palette.citron : palette.amber;
 
+  const position = stopped ? 'STOPPED' : `${Math.min(stage + 1, MISSION_STAGES.length)}/${MISSION_STAGES.length}`;
+
   return (
-    <View style={styles.wrap}>
+    <View
+      style={styles.wrap}
+      accessibilityRole="progressbar"
+      accessibilityLabel={`Mission stage ${missionStageLabel(state)}, ${position}`}>
       <View style={styles.top}>
         <LiveDot color={accent} pulse={!stopped && !done} size={6} />
         <Text style={[styles.stage, { color: accent }]}>{missionStageLabel(state)}</Text>
-        <Text style={styles.counter}>
-          {stopped ? 'STOPPED' : `${Math.min(stage + 1, MISSION_STAGES.length)}/${MISSION_STAGES.length}`}
-        </Text>
+        <Text style={styles.counter}>{position}</Text>
       </View>
+      {/* The current stage is named above, so the track carries no labels: six
+          of them only fit on a phone truncated to three unreadable letters. */}
       <View style={styles.track}>
         {MISSION_STAGES.map((label, index) => {
           const filled = index < stage;
@@ -37,29 +42,15 @@ export function MissionProgress({ state, compact = false }: { state: string; com
           );
         })}
       </View>
-      {compact ? null : (
-        <View style={styles.legend}>
-          {MISSION_STAGES.map((label, index) => (
-            <Text
-              key={label}
-              style={[styles.legendText, index === stage && !stopped && !done && { color: palette.muted }]}
-              numberOfLines={1}>
-              {label.slice(0, 3)}
-            </Text>
-          ))}
-        </View>
-      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: 8 },
+  wrap: { gap: 10 },
   top: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  stage: { ...type.label, fontSize: 9 },
-  counter: { ...type.label, color: palette.mutedDeep, fontSize: 9, marginLeft: 'auto' },
+  stage: { ...type.labelSm },
+  counter: { ...type.labelSm, color: palette.mutedDeep, marginLeft: 'auto' },
   track: { flexDirection: 'row', gap: 4 },
-  segment: { flex: 1, height: 3, borderRadius: radius.pill, backgroundColor: palette.line },
-  legend: { flexDirection: 'row', gap: 4 },
-  legendText: { ...type.label, color: '#3C4149', fontSize: 7, flex: 1, textAlign: 'center' },
+  segment: { flex: 1, height: 4, borderRadius: radius.pill, backgroundColor: palette.line },
 });

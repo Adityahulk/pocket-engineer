@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Animated, StyleSheet, View, type DimensionValue } from 'react-native';
 
+import { useReducedMotion } from '@/lib/reduced-motion';
 import { palette, radius, spacing } from '@/lib/theme';
 
 export function Skeleton({ width = '100%', height = 14, round = radius.sm }: {
@@ -9,22 +10,24 @@ export function Skeleton({ width = '100%', height = 14, round = radius.sm }: {
   round?: number;
 }) {
   const [value] = useState(() => new Animated.Value(0));
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
+    if (reducedMotion) return;
     const animation = Animated.loop(Animated.sequence([
       Animated.timing(value, { toValue: 1, duration: 780, useNativeDriver: true }),
       Animated.timing(value, { toValue: 0, duration: 780, useNativeDriver: true }),
     ]));
     animation.start();
     return () => animation.stop();
-  }, [value]);
+  }, [reducedMotion, value]);
 
   return (
     <Animated.View
       accessibilityRole="progressbar"
       style={{
         width, height, borderRadius: round, backgroundColor: palette.panelRaised,
-        opacity: value.interpolate({ inputRange: [0, 1], outputRange: [0.45, 0.9] }),
+        opacity: reducedMotion ? 0.7 : value.interpolate({ inputRange: [0, 1], outputRange: [0.45, 0.9] }),
       }}
     />
   );

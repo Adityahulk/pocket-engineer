@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
   callButtonHover: { backgroundColor: '#D7FF75' },
   callWaves: { height: 24, flexDirection: 'row', alignItems: 'center', gap: 3 },
   waveBar: { width: 3, borderRadius: 2, backgroundColor: palette.ink },
-  callText: { ...type.label, color: palette.ink, fontSize: 9, letterSpacing: 1.4, marginTop: 7 },
+  callText: { ...type.labelSm, color: palette.ink, letterSpacing: 1.4, marginTop: 7 },
 
   metrics: {
     flexDirection: 'row', backgroundColor: palette.panel, borderColor: palette.line,
@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
   metricHover: { backgroundColor: palette.panelHover },
   metricBorder: { borderRightWidth: 1, borderRightColor: palette.line },
   metricValue: { fontFamily: fonts.mono, fontSize: 23, lineHeight: 26 },
-  metricLabel: { ...type.label, color: palette.mutedDeep, fontSize: 8 },
+  metricLabel: { ...type.labelSm, color: palette.mutedDeep },
 
   incidentCard: { overflow: 'hidden' },
   incidentBody: { padding: spacing.md },
@@ -288,15 +288,15 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: palette.redLine, alignItems: 'center', justifyContent: 'center',
   },
   incidentCopy: { flex: 1, marginLeft: 12 },
-  incidentLabel: { ...type.label, color: palette.red, fontSize: 8 },
+  incidentLabel: { ...type.labelSm, color: palette.red },
   incidentTitle: { ...type.heading, color: palette.paper, marginTop: 5 },
   incidentSummary: { ...type.body, color: palette.redText, marginTop: 14 },
   incidentFooter: {
     flexDirection: 'row', alignItems: 'center', gap: 7, borderTopWidth: 1, borderTopColor: palette.redLine,
     paddingHorizontal: spacing.md, paddingVertical: 12,
   },
-  incidentAction: { ...type.label, color: palette.red, flex: 1, fontSize: 8 },
-  incidentTime: { ...type.label, color: palette.redText, fontSize: 8 },
+  incidentAction: { ...type.labelSm, color: palette.red, flex: 1 },
+  incidentTime: { ...type.labelSm, color: palette.redText },
 
   healthyCard: { flexDirection: 'row', alignItems: 'center', gap: 13 },
   healthyIconWrap: {
@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
   engineerCard: { width: 178 },
   engineerHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   engineerStatus: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  engineerStatusText: { ...type.label, color: palette.mutedDeep, fontSize: 7 },
+  engineerStatusText: { ...type.labelSm, color: palette.mutedDeep },
   engineerName: { ...type.bodyStrong, color: palette.paper, marginTop: 14 },
   engineerSpecialty: { ...type.caption, color: palette.muted, fontSize: 11, marginTop: 4 },
   engineerCallCard: { width: 178, justifyContent: 'center' },
@@ -341,6 +341,6 @@ const styles = StyleSheet.create({
   errorRetry: { alignSelf: 'flex-start', marginTop: 14 },
 
   footerRule: { marginTop: spacing.xl },
-  footer: { ...type.label, color: '#3C4149', textAlign: 'center', marginTop: 18, fontSize: 9 },
+  footer: { ...type.labelSm, color: palette.mutedDeep, textAlign: 'center', marginTop: 18 },
   signOut: { alignSelf: 'center', marginTop: 18, maxWidth: 320 },
 });

@@ -4,7 +4,7 @@ import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-na
 import { Button } from '@/components/ui/button';
 import { Icon, type IconName } from '@/components/ui/icon';
 import { Touchable } from '@/components/ui/touchable';
-import { palette, radius, spacing, type } from '@/lib/theme';
+import { hitTarget, palette, radius, spacing, type } from '@/lib/theme';
 
 export function SectionHeader({ title, count, action, onAction, style }: {
   title: string;
@@ -87,11 +87,14 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: spacing.xl, marginBottom: 12 },
   tick: { width: 3, height: 11, borderRadius: 2, backgroundColor: palette.citron },
   title: { ...type.label, color: palette.muted },
-  count: { ...type.label, color: palette.mutedDeep, fontSize: 9 },
+  count: { ...type.labelSm, color: palette.mutedDeep },
   spacer: { flex: 1 },
-  action: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: radius.sm, borderWidth: 1, borderColor: palette.line },
+  action: {
+    minHeight: hitTarget, justifyContent: 'center', paddingHorizontal: 14, borderRadius: radius.sm,
+    borderWidth: 1, borderColor: palette.line,
+  },
   actionHover: { borderColor: palette.lineBright, backgroundColor: palette.panel },
-  actionText: { ...type.label, color: palette.muted, fontSize: 8 },
+  actionText: { ...type.labelSm, color: palette.muted },
 
   intro: { marginTop: spacing.sm, marginBottom: spacing.lg },
   eyebrow: { ...type.label },

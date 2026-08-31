@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
 
   healthCard: { flexDirection: 'row', alignItems: 'center', gap: 11, marginTop: 20 },
   healthCopy: { flex: 1 },
-  healthLabel: { ...type.label, color: palette.paper, fontSize: 8 },
+  healthLabel: { ...type.labelSm, color: palette.paper },
   healthText: { ...type.caption, color: palette.muted, fontSize: 11, marginTop: 4 },
 
   rule: { marginVertical: spacing.xl },
@@ -219,13 +219,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 12,
   },
   safetyCopy: { flex: 1, gap: 5 },
-  safety: { ...type.label, color: palette.mutedDeep, fontSize: 8 },
-  counter: { ...type.label, color: palette.mutedDeep, fontSize: 8, opacity: 0.7 },
+  safety: { ...type.labelSm, color: palette.mutedDeep },
+  counter: { ...type.labelSm, color: palette.mutedDeep },
   error: { ...type.body, color: palette.red, marginTop: 12 },
 
   taskCard: { marginBottom: 10, gap: 14 },
   taskTop: { flexDirection: 'row', alignItems: 'center' },
   taskGoal: { ...type.bodyStrong, color: palette.paper },
-  taskDate: { ...type.label, color: palette.mutedDeep, fontSize: 8 },
+  taskDate: { ...type.labelSm, color: palette.mutedDeep },
   noTasks: { ...type.body, color: palette.muted, textAlign: 'center', padding: spacing.lg },
 });

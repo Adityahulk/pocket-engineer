@@ -99,6 +99,6 @@ const styles = StyleSheet.create({
   icon: { width: 40, height: 40, borderRadius: radius.md, backgroundColor: palette.paper, alignItems: 'center', justifyContent: 'center' },
   copy: { flex: 1 },
   name: { ...type.bodyStrong, color: palette.paper },
-  meta: { ...type.label, color: palette.muted, fontSize: 8, marginTop: 5 },
+  meta: { ...type.labelSm, color: palette.muted, marginTop: 5 },
   error: { ...type.body, color: palette.red, marginTop: 12 },
 });

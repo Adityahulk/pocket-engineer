@@ -15,7 +15,8 @@ export const palette = {
 
   paper: '#F6F7F5',
   muted: '#9BA2AC',
-  mutedDeep: '#666D78',
+  /** Dimmest text tone still cleared for body copy: 4.8:1 on `panel`. */
+  mutedDeep: '#7B828D',
 
   // Signal accent.
   citron: '#C8F751',
@@ -75,10 +76,18 @@ export const type = {
   body: { fontFamily: fonts.regular, fontSize: 14, lineHeight: 22 },
   caption: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 18 },
   /** Uppercase machine label. Mono keeps the instrument-panel voice. */
-  label: { fontFamily: fonts.mono, fontSize: 10, lineHeight: 14, letterSpacing: 0.4 },
+  label: { fontFamily: fonts.mono, fontSize: 11, lineHeight: 15, letterSpacing: 0.4 },
+  /**
+   * Tertiary machine label. This is the floor: nothing in the product should
+   * set a smaller size, because uppercase mono stops being readable below it.
+   */
+  labelSm: { fontFamily: fonts.mono, fontSize: 10, lineHeight: 14, letterSpacing: 0.4 },
   data: { fontFamily: fonts.mono, fontSize: 12, lineHeight: 18 },
   mono: { fontFamily: fonts.mono, fontSize: 11, lineHeight: 17 },
 };
+
+/** Minimum comfortable hit area. Apple asks 44, Material asks 48. */
+export const hitTarget = 44;
 
 export const shadow = Platform.select({
   ios: { shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 20, shadowOffset: { width: 0, height: 12 } },

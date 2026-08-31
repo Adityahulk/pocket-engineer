@@ -2,7 +2,7 @@ import { ActivityIndicator, StyleSheet, Text, View, type StyleProp, type ViewSty
 
 import { Icon, type IconName } from '@/components/ui/icon';
 import { Touchable } from '@/components/ui/touchable';
-import { glow, palette, radius, type } from '@/lib/theme';
+import { glow, hitTarget, palette, radius, type } from '@/lib/theme';
 
 type Variant = 'primary' | 'light' | 'secondary' | 'ghost' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
@@ -58,15 +58,15 @@ const styles = StyleSheet.create({
 });
 
 const sizes = StyleSheet.create({
-  sm: { minHeight: 34, paddingHorizontal: 12 },
-  md: { minHeight: 44, paddingHorizontal: 16 },
-  lg: { minHeight: 52, paddingHorizontal: 22 },
+  sm: { minHeight: hitTarget, paddingHorizontal: 14 },
+  md: { minHeight: 48, paddingHorizontal: 16 },
+  lg: { minHeight: 54, paddingHorizontal: 22 },
 });
 
 const labelSizes = StyleSheet.create({
-  sm: { fontSize: 9 },
-  md: { fontSize: 10 },
-  lg: { fontSize: 11 },
+  sm: { fontSize: 10 },
+  md: { fontSize: 11 },
+  lg: { fontSize: 12 },
 });
 
 const variants = StyleSheet.create({

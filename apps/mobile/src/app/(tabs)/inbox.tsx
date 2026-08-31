@@ -83,5 +83,5 @@ const styles = StyleSheet.create({
   goal: { ...type.heading, color: palette.paper, fontSize: 17, lineHeight: 24, marginTop: 14 },
   footer: { flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 16 },
   owner: { ...type.caption, color: palette.muted, flex: 1 },
-  review: { ...type.label, color: palette.citron, fontSize: 8 },
+  review: { ...type.labelSm, color: palette.citron },
 });
